@@ -264,15 +264,18 @@ class ConvoyageApp {
   async loadAppCore() {
     // 1. Charger les préférences et paramètres utilisateur
     this.settings = StorageService.loadSettings();
-    this.isDarkMode = StorageService.getTheme() === 'dark';
+    this.themeMode = StorageService.getTheme(); // 'system', 'dark' ou 'light'
+    this.updateDarkModeState();
     this.applyTheme();
 
     // Synchronisation automatique avec le thème du système (Bureau ou Mobile)
     if (window.matchMedia) {
       const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
       const handleSystemThemeChange = (e) => {
-        this.isDarkMode = e.matches;
-        this.applyTheme();
+        if (this.themeMode === 'system') {
+          this.updateDarkModeState();
+          this.applyTheme();
+        }
       };
       if (mediaQuery.addEventListener) {
         mediaQuery.addEventListener('change', handleSystemThemeChange);
@@ -328,39 +331,92 @@ class ConvoyageApp {
   }
 
   /**
+   * Met à jour l'état du mode sombre (isDarkMode) selon le themeMode actuel
+   */
+  updateDarkModeState() {
+    if (this.themeMode === 'system') {
+      const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+      this.isDarkMode = prefersDark;
+    } else {
+      this.isDarkMode = (this.themeMode === 'dark');
+    }
+  }
+
+  /**
    * Applique le thème configuré dans l'ensemble de l'arbre DOM
    */
   applyTheme() {
     const html = document.documentElement;
     const themeIconLight = document.getElementById('theme-icon-light');
     const themeIconDark = document.getElementById('theme-icon-dark');
+    const themeIconSystem = document.getElementById('theme-icon-system');
     const themeText = document.getElementById('theme-toggle-text');
 
     if (this.isDarkMode) {
       html.classList.add('dark');
-      if (themeIconLight) themeIconLight.classList.add('hidden');
-      if (themeIconDark) themeIconDark.classList.remove('hidden');
-      if (themeText) themeText.innerText = 'Mode Clair';
     } else {
       html.classList.remove('dark');
+    }
+
+    // Gérer la visibilité des icônes et le libellé texte pour les 3 états
+    if (this.themeMode === 'system') {
+      if (themeIconLight) themeIconLight.classList.add('hidden');
+      if (themeIconDark) themeIconDark.classList.add('hidden');
+      if (themeIconSystem) themeIconSystem.classList.remove('hidden');
+      if (themeText) {
+        const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        themeText.innerText = `Auto (${prefersDark ? 'Sombre' : 'Clair'})`;
+      }
+    } else if (this.themeMode === 'dark') {
+      if (themeIconLight) themeIconLight.classList.add('hidden');
+      if (themeIconDark) themeIconDark.classList.remove('hidden');
+      if (themeIconSystem) themeIconSystem.classList.add('hidden');
+      if (themeText) themeText.innerText = 'Mode Sombre';
+    } else {
       if (themeIconLight) themeIconLight.classList.remove('hidden');
       if (themeIconDark) themeIconDark.classList.add('hidden');
-      if (themeText) themeText.innerText = 'Mode Sombre';
+      if (themeIconSystem) themeIconSystem.classList.add('hidden');
+      if (themeText) themeText.innerText = 'Mode Clair';
     }
-    
+
     // Enregistrer puis redessiner les graphiques pour adapter les polices et couleurs de grilles
-    StorageService.saveTheme(this.isDarkMode ? 'dark' : 'light');
+    StorageService.saveTheme(this.themeMode);
     StatsService.renderCharts(this.filteredMissions, this.isDarkMode, this.settings);
+
+    // Mettre à jour les icônes lucide ajoutées dynamiquement
+    if (window.lucide) {
+      window.lucide.createIcons();
+    }
   }
 
   /**
-   * Alterne entre le thème sombre et clair
+   * Alterne entre le thème automatique (système), clair et sombre
    */
   toggleTheme() {
-    this.isDarkMode = !this.isDarkMode;
+    if (this.themeMode === 'system') {
+      // Si on était en mode système, on passe au mode opposé au thème système actuel
+      const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+      this.themeMode = prefersDark ? 'light' : 'dark';
+    } else if (this.themeMode === 'light') {
+      this.themeMode = 'dark';
+    } else {
+      this.themeMode = 'system';
+    }
+
+    this.updateDarkModeState();
     this.applyTheme();
+
+    let textStatus = '';
+    if (this.themeMode === 'system') {
+      textStatus = 'Automatique (basé sur le système)';
+    } else if (this.themeMode === 'light') {
+      textStatus = 'Clair (manuel)';
+    } else {
+      textStatus = 'Sombre (manuel)';
+    }
+
     DashboardService.showNotification(
-      `Thème ${this.isDarkMode ? 'sombre' : 'clair'} activé`, 
+      `Thème réglé sur : ${textStatus}`, 
       'info'
     );
   }
@@ -419,8 +475,16 @@ class ConvoyageApp {
     this.settings.activeView = viewId;
     StorageService.saveSettings(this.settings);
 
+    if (viewId === 'inspection') {
+      if (window.InspectionService && typeof window.InspectionService.openInspection === 'function') {
+        if (!window.InspectionService.activeMissionId) {
+          window.InspectionService.openInspection(null);
+        }
+      }
+    }
+
     // 1. Cacher toutes les sections
-    const sections = ['section-dashboard', 'section-missions', 'section-stats', 'section-settings', 'section-planner', 'section-admin-users', 'section-admin-logs', 'section-account'];
+    const sections = ['section-dashboard', 'section-missions', 'section-stats', 'section-settings', 'section-planner', 'section-admin-users', 'section-admin-logs', 'section-account', 'section-inspection'];
     sections.forEach(s => {
       const el = document.getElementById(s);
       if (el) el.classList.add('hidden');
@@ -1145,6 +1209,7 @@ class ConvoyageApp {
     } 
     
     else if (action === 'inspect') {
+      this.switchView('inspection');
       InspectionService.openInspection(id);
     }
     
@@ -2912,7 +2977,7 @@ class ConvoyageApp {
       } else if (act.startsWith('AUTH_LOGIN_ERROR')) {
         actionTag = `<span class="px-2 py-0.5 text-[9px] font-extrabold bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-450 rounded border border-rose-150/40 uppercase font-sans tracking-wide block text-center max-w-[130px] truncate">ERR COMPTE</span>`;
       } else if (act.startsWith('AUTH_LOGOUT')) {
-        actionTag = `<span class="px-2 py-0.5 text-[9px] font-extrabold bg-slate-100 dark:bg-slate-800 text-slate-500 rounded border border-slate-200 uppercase font-sans tracking-wide block text-center max-w-[130px] truncate">DECONNEXION</span>`;
+        actionTag = `<span class="px-2 py-0.5 text-[9px] font-extrabold bg-slate-100 dark:bg-slate-800 text-slate-500 rounded border border-slate-200 dark:border-slate-700 uppercase font-sans tracking-wide block text-center max-w-[130px] truncate">DECONNEXION</span>`;
       } else if (act.includes('USER_CREATE')) {
         actionTag = `<span class="px-2 py-0.5 text-[9px] font-extrabold bg-indigo-50 dark:bg-indigo-950/40 text-indigo-650 dark:text-indigo-400 rounded border border-indigo-155/40 uppercase font-sans tracking-wide block text-center max-w-[130px] truncate">AJOUT COMPTE</span>`;
       } else if (act.includes('USER_UPDATE')) {

@@ -27,6 +27,58 @@ export const InspectionService = {
   arriveeDate: '',
   arriveeTime: '',
 
+  renderSelectableMissions() {
+    const listEl = document.getElementById('ins_selectable_missions_list');
+    if (!listEl) return;
+    listEl.innerHTML = '';
+
+    const missions = app.missions || [];
+    if (missions.length === 0) {
+      listEl.innerHTML = `
+        <div class="col-span-full py-8 text-center text-slate-400 dark:text-slate-500 font-medium">
+          <i data-lucide="info" class="w-8 h-8 mx-auto mb-2 text-slate-400"></i>
+          Aucune mission disponible pour l'état des lieux.
+        </div>
+      `;
+      if (window.lucide) window.lucide.createIcons();
+      return;
+    }
+
+    missions.forEach(m => {
+      const isCompleted = m.inspection && m.inspection.status === 'Validée';
+      const card = document.createElement('div');
+      card.className = "bg-slate-50 dark:bg-slate-900 border border-slate-150 dark:border-slate-850 p-4 rounded-xl flex flex-col justify-between gap-3 hover:shadow-md transition-all";
+      card.innerHTML = `
+        <div class="space-y-1.5">
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] px-2 py-0.5 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 font-bold rounded-full">${m.plateforme || 'Otoqi'}</span>
+            <span class="text-[10px] uppercase font-bold text-slate-400 font-mono">${m.immatriculation || 'Sans Immat'}</span>
+          </div>
+          <h4 class="font-extrabold text-xs text-slate-800 dark:text-white uppercase truncate">${m.vehicle || m.modele || 'Véhicule N/A'}</h4>
+          <p class="text-[11px] text-slate-500 truncate">
+            <span class="font-semibold">${m.depart || 'N/A'}</span> ➔ <span class="font-semibold">${m.destination || 'N/A'}</span>
+          </p>
+          <div class="flex items-center justify-between pt-1">
+            <span class="text-[10px] text-emerald-500 font-extrabold">${m.gain || 0} € net</span>
+            <span class="text-[10px] px-2 py-0.5 ${isCompleted ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400' : 'bg-amber-50 text-amber-600 dark:bg-amber-950/30 dark:text-amber-400'} font-black uppercase tracking-wider rounded">
+              ${isCompleted ? 'Validée' : 'À inspecter'}
+            </span>
+          </div>
+        </div>
+        <button onclick="InspectionService.openInspection('${m.id}')" class="w-full text-center py-2 bg-indigo-600 hover:bg-indigo-505 text-white rounded-lg text-[10.5px] font-extrabold cursor-pointer transition-colors mt-1 uppercase tracking-wider">
+          ${isCompleted ? 'Voir le rapport' : "Lancer l'inspection"}
+        </button>
+      `;
+      listEl.appendChild(card);
+    });
+
+    if (window.lucide) window.lucide.createIcons();
+  },
+
+  cancelSelection() {
+    this.openInspection(null);
+  },
+
   openInspection(missionId) {
     if (!document.getElementById('inspectionModal')) {
       if (window.DashboardService) {
@@ -34,6 +86,20 @@ export const InspectionService = {
       }
       return;
     }
+
+    const noView = document.getElementById('ins_no_mission_view');
+    const activeView = document.getElementById('ins_active_workflow_view');
+    const successView = document.getElementById('section_ins_success_view');
+
+    if (!missionId) {
+      this.activeMissionId = null;
+      if (noView) noView.classList.remove('hidden');
+      if (activeView) activeView.classList.add('hidden');
+      if (successView) successView.classList.add('hidden');
+      this.renderSelectableMissions();
+      return;
+    }
+
     this.activeMissionId = missionId;
     this.damages = []; // reset
     this.currentDamageStage = 'departure';
@@ -48,6 +114,10 @@ export const InspectionService = {
       return;
     }
 
+    if (noView) noView.classList.add('hidden');
+    if (activeView) activeView.classList.remove('hidden');
+    if (successView) successView.classList.add('hidden');
+
     if (mission) {
       const vehicleInfoEl = document.getElementById('ins_vehicle_info');
       const plateInfoEl = document.getElementById('ins_plate_info');
@@ -57,6 +127,20 @@ export const InspectionService = {
       if (plateInfoEl) {
         plateInfoEl.textContent = mission.immatriculation || 'Plaque NS';
       }
+
+      // Also set sidebar helper variables in layout
+      const sideVeh = document.getElementById('ins_sidebar_vehicle');
+      const sidePlate = document.getElementById('ins_sidebar_plate');
+      const sideDep = document.getElementById('ins_sidebar_depart');
+      const sideDest = document.getElementById('ins_sidebar_dest');
+
+      if (sideVeh) sideVeh.textContent = mission.vehicle || mission.modele || 'NS';
+      if (sidePlate) {
+        sidePlate.textContent = mission.immatriculation || 'NS';
+        sidePlate.classList.remove('animate-pulse');
+      }
+      if (sideDep) sideDep.textContent = mission.depart || 'NS';
+      if (sideDest) sideDest.textContent = mission.destination || 'NS';
     }
 
     // Initialize departure status input fields with defaults
@@ -126,10 +210,11 @@ export const InspectionService = {
     this.renderDamagesList();
     
     this.showStep('intro');
-    document.getElementById('inspectionModal').classList.remove('hidden');
-    document.getElementById('inspectionModal').classList.add('flex');
-    // Hide body scroll
-    document.body.style.overflow = 'hidden';
+    const iModal = document.getElementById('inspectionModal');
+    if (iModal) {
+      iModal.classList.remove('hidden');
+      iModal.classList.add('flex');
+    }
   },
 
   showSuccessModal(mission) {
@@ -238,6 +323,14 @@ export const InspectionService = {
     } else {
       photosContainer.innerHTML = '<p class="text-xs text-slate-500 italic">Aucune photo prise.</p>';
     }
+
+    const noView = document.getElementById('ins_no_mission_view');
+    const activeView = document.getElementById('ins_active_workflow_view');
+    const successView = document.getElementById('section_ins_success_view');
+
+    if (noView) noView.classList.add('hidden');
+    if (activeView) activeView.classList.add('hidden');
+    if (successView) successView.classList.remove('hidden');
 
     const sModal = document.getElementById('ins_success_modal');
     if (sModal) {

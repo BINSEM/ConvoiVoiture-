@@ -350,6 +350,15 @@ export const DashboardService = {
       if (label) label.innerText = 'Masquer les analyses et graphiques';
       if (iconOpen) iconOpen.classList.add('hidden');
       if (iconClosed) iconClosed.classList.remove('hidden');
+
+      // OPTIMIZATION: Trigger chart rendering when the dashboard panels are first shown
+      if (window.StatsService && window.app) {
+        window.StatsService.renderCharts(
+          window.app.filteredMissions || [],
+          window.app.isDarkMode || false,
+          window.app.settings || {}
+        );
+      }
     } else {
       container.classList.add('hidden');
       if (label) label.innerText = 'Afficher les analyses et graphiques';

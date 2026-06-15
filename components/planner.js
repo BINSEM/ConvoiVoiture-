@@ -137,11 +137,11 @@ export const PlannerService = {
 
   getBadgeColor(platform) {
     switch (platform.toLowerCase()) {
-      case 'otoqi': return 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-400';
-      case 'driiveme': return 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-400';
-      case 'hiflow': return 'bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-400';
-      case 'expedicar': return 'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-400';
-      default: return 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-400';
+      case 'otoqi': return 'bg-orange-50 text-orange-700 dark:bg-orange-950/30 dark:text-orange-400 border border-orange-200/45 dark:border-orange-500/20';
+      case 'driiveme': return 'bg-cyan-50 text-cyan-700 dark:bg-cyan-950/30 dark:text-cyan-400 border border-cyan-200/45 dark:border-cyan-500/20';
+      case 'hiflow': return 'bg-violet-50 text-violet-700 dark:bg-violet-950/30 dark:text-violet-400 border border-violet-200/45 dark:border-violet-500/20';
+      case 'expedicar': return 'bg-rose-50 text-rose-700 dark:bg-rose-950/30 dark:text-rose-400 border border-rose-200/45 dark:border-rose-500/20';
+      default: return 'bg-slate-50 text-slate-700 dark:bg-slate-800/45 dark:text-slate-400 border border-slate-200/45 dark:border-slate-700/50';
     }
   },
 
@@ -243,36 +243,39 @@ export const PlannerService = {
     }
 
     listEl.innerHTML = filtered.map(o => `
-      <div draggable="true" ondragstart="window.PlannerService.handleDragStart(event, '${o.id}')" ondragend="window.PlannerService.handleDragEnd(event)" class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 hover:border-indigo-400 dark:hover:border-indigo-500 hover:shadow-md transition-all cursor-grab active:cursor-grabbing group" onclick="PlannerService.addToPlan('${o.id}')">
-        <div class="flex items-center justify-between mb-2">
+      <div draggable="true" ondragstart="window.PlannerService.handleDragStart(event, '${o.id}')" ondragend="window.PlannerService.handleDragEnd(event)" class="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-2xl p-4 hover:border-indigo-500/60 dark:hover:border-indigo-550 hover:shadow-lg hover:shadow-indigo-550/5 transition-all cursor-grab active:cursor-grabbing group shadow-sm select-none" onclick="PlannerService.addToPlan('${o.id}')">
+        <div class="flex items-center justify-between mb-3">
           <div class="flex items-center gap-1.5 flex-wrap">
-            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${this.getBadgeColor(o.platform)} tracking-wide">${o.platform}</span>
-            <span class="text-[9px] font-bold bg-slate-100 dark:bg-slate-700/60 text-slate-500 dark:text-slate-400 px-1.5 py-0.5 rounded flex items-center gap-1">
-              <i data-lucide="calendar" class="w-2.5 h-2.5 text-slate-400 shrink-0"></i>
+            <span class="text-[10px] font-black px-2.5 py-1 rounded-full ${this.getBadgeColor(o.platform)} tracking-wide shadow-xs">${o.platform}</span>
+            <span class="text-[9px] font-bold bg-slate-50 dark:bg-slate-950 text-slate-500 dark:text-slate-450 px-2 py-1 rounded-lg flex items-center gap-1 border border-slate-200/30 dark:border-slate-800/40">
+              <i data-lucide="calendar" class="w-3 h-3 text-slate-450 shrink-0"></i>
               <span>${this.formatOppDate(o.date)}</span>
             </span>
           </div>
           <div class="flex items-center gap-1.5">
-            <span class="text-xs font-black font-mono text-emerald-600 dark:text-emerald-400">${o.price} €</span>
-            <button onclick="event.stopPropagation(); window.PlannerService.deleteOpportunity('${o.id}')" class="p-1 hover:bg-rose-55 dark:hover:bg-rose-950/40 text-slate-400 hover:text-rose-500 rounded-lg transition-all active:scale-95 cursor-pointer" title="Supprimer l'opportunité">
-              <i data-lucide="trash-2" class="w-3 h-3"></i>
+            <span class="text-sm font-black font-mono text-emerald-600 dark:text-emerald-450">${o.price} €</span>
+            <button onclick="event.stopPropagation(); window.PlannerService.deleteOpportunity('${o.id}')" class="p-1.5 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-slate-400 hover:text-rose-500 rounded-lg transition-all active:scale-95 cursor-pointer animate-fade-in" title="Supprimer l'opportunité">
+              <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
             </button>
           </div>
         </div>
-        <div class="flex items-center justify-between text-sm">
-          <div class="flex-1">
-            <p class="font-bold text-slate-800 dark:text-slate-200 truncate" title="${o.from}">${o.from}</p>
+        <div class="flex items-center justify-between text-xs sm:text-sm my-2 gap-2">
+          <div class="flex-1 min-w-0 text-left">
+            <p class="font-black text-slate-800 dark:text-slate-200 truncate" title="${o.from}">${o.from}</p>
           </div>
-          <div class="px-2">
-            <i data-lucide="arrow-right" class="w-4 h-4 text-slate-300"></i>
+          <div class="px-1.5 shrink-0 flex items-center justify-center">
+            <i data-lucide="arrow-right" class="w-4 h-4 text-slate-300 dark:text-slate-700 transition-transform group-hover:translate-x-0.5"></i>
           </div>
-          <div class="flex-1 text-right">
-            <p class="font-bold text-slate-800 dark:text-slate-200 truncate" title="${o.to}">${o.to}</p>
+          <div class="flex-1 min-w-0 text-right">
+            <p class="font-black text-slate-800 dark:text-slate-200 truncate" title="${o.to}">${o.to}</p>
           </div>
         </div>
-        <div class="flex items-center justify-between mt-3 text-[10px] text-slate-400">
-          <span>~${o.distance} km</span>
-          <span class="group-hover:text-indigo-500 font-bold transition-colors font-sans">Planifier + (ou glisser)</span>
+        <div class="flex items-center justify-between mt-3.5 pt-2.5 border-t border-slate-100/60 dark:border-slate-900/60 text-[10px] text-slate-400">
+          <span class="font-bold flex items-center gap-1"><i data-lucide="navigation-2" class="w-3.5 h-3.5 text-slate-400 dark:text-slate-600 shrink-0"></i> ~${o.distance} km</span>
+          <span class="group-hover:text-indigo-600 dark:group-hover:text-indigo-400 font-black transition-colors flex items-center gap-1 uppercase tracking-wider text-[9px] font-sans">
+            <span>Planifier +</span>
+            <i data-lucide="plus-circle" class="w-3 h-3 text-indigo-500 dark:text-indigo-400"></i>
+          </span>
         </div>
       </div>
     `).join('');
@@ -405,41 +408,74 @@ export const PlannerService = {
       itemNode.innerHTML = `
         ${badgeHtml}
         ${timelineLine}
-        <div class="w-6 h-6 rounded-full bg-indigo-600 text-none text-white flex items-center justify-center font-bold text-[10px] mt-2 shrink-0 z-10 shadow-sm">
+        <div class="w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold text-[10px] mt-2 shrink-0 z-10 shadow-md">
           ${index + 1}
         </div>
         
-        <div class="ml-4 flex-1 bg-white dark:bg-slate-900 border rounded-2xl p-4 shadow-sm flex items-center justify-between mb-4 relative ${index > 0 && !isSmart ? 'border-amber-200 dark:border-amber-900/30' : ''} ${index > 0 && isSmart ? 'border-emerald-200 dark:border-emerald-800/60' : 'border-slate-200 dark:border-slate-850'}">
-          <!-- Info parcours -->
-          <div class="grid grid-cols-12 gap-2 flex-1 items-center">
-             <div class="col-span-4 flex flex-col pl-1">
-               <span class="text-[9px] text-slate-400 font-extrabold uppercase tracking-widest mb-1.5 block">Départ</span>
-               <span class="font-extrabold text-slate-850 dark:text-slate-100 text-[13px] md:text-sm truncate" title="${m.from}">${m.from}</span>
+        <div class="ml-4 flex-1 bg-white dark:bg-slate-900 border rounded-2xl p-4 shadow-sm flex items-center justify-between mb-4 relative ${index > 0 && !isSmart ? 'border-amber-200 dark:border-amber-900/30' : ''} ${index > 0 && isSmart ? 'border-emerald-200 dark:border-emerald-800/60' : 'border-slate-200 dark:border-slate-850'} transition-all hover:shadow-md">
+          
+          <!-- MOBILE ACCORDION / ADAPTIVE LAYOUT (md:hidden) -->
+          <div class="md:hidden flex-1 flex flex-col gap-3">
+             <div class="flex items-center justify-between">
+               <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${this.getBadgeColor(m.platform)} tracking-wide shadow-xs">${m.platform}</span>
+               <div class="flex flex-col text-right">
+                 <span class="font-black font-mono text-[#059669] dark:text-emerald-400 text-sm leading-none">${m.price.toFixed(2)} €</span>
+                 <span class="text-[8px] font-bold text-slate-400 mt-1">${(m.price/m.distance).toFixed(3)} €/km</span>
+               </div>
              </div>
              
-             <div class="col-span-4 flex flex-col items-center justify-center px-1 text-slate-300">
-                <span class="text-[9px] text-slate-450 dark:text-slate-500 font-bold mb-1">${m.distance} km</span>
-                <div class="w-full flex items-center gap-1">
-                  <div class="flex-1 border-t border-dashed border-slate-300 dark:border-slate-700"></div>
-                  <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-slate-350 dark:text-slate-600 shrink-0"></i>
-                  <div class="flex-1 border-t border-dashed border-slate-300 dark:border-slate-700"></div>
-                </div>
-                <span class="text-[9px] font-black px-2 py-0.5 rounded mt-2 uppercase tracking-wide shrink-0 ${this.getBadgeColor(m.platform)}">${m.platform}</span>
-             </div>
-
-             <div class="col-span-4 flex flex-col text-right pr-2">
-               <span class="text-[9px] text-slate-400 font-extrabold uppercase tracking-widest mb-1.5 block">Arrivée</span>
-               <span class="font-extrabold text-slate-850 dark:text-slate-100 text-[13px] md:text-sm truncate" title="${m.to}">${m.to}</span>
+             <div class="flex items-center justify-between gap-2 bg-slate-50/50 dark:bg-slate-950/40 p-2 rounded-xl border border-slate-100 dark:border-slate-850">
+               <div class="flex-1 min-w-0">
+                 <span class="text-[8px] text-slate-400 font-extrabold uppercase tracking-widest block mb-0.5">Départ</span>
+                 <span class="font-bold text-slate-800 dark:text-slate-100 text-[11px] truncate block" title="${m.from}">${m.from}</span>
+               </div>
+               <div class="flex flex-col items-center justify-center px-1 shrink-0">
+                 <span class="text-[8px] text-slate-450 dark:text-slate-500 font-bold leading-none mb-1">${m.distance} km</span>
+                 <i data-lucide="arrow-right" class="w-3.5 h-3.5 text-slate-350 dark:text-slate-650 shrink-0"></i>
+               </div>
+               <div class="flex-1 min-w-0 text-right">
+                 <span class="text-[8px] text-slate-400 font-extrabold uppercase tracking-widest block mb-0.5">Arrivée</span>
+                 <span class="font-bold text-slate-800 dark:text-slate-100 text-[11px] truncate block" title="${m.to}">${m.to}</span>
+               </div>
              </div>
           </div>
+
+          <!-- DESKTOP GRID LAYOUT (hidden md:flex) -->
+          <div class="hidden md:flex flex-1 items-center justify-between">
+            <!-- Info parcours -->
+            <div class="grid grid-cols-12 gap-2 flex-1 items-center">
+               <div class="col-span-4 flex flex-col pl-1">
+                 <span class="text-[9px] text-slate-400 font-extrabold uppercase tracking-widest mb-1.5 block">Départ</span>
+                 <span class="font-extrabold text-slate-850 dark:text-slate-100 text-[13px] md:text-sm truncate" title="${m.from}">${m.from}</span>
+               </div>
+               
+               <div class="col-span-4 flex flex-col items-center justify-center px-1 text-slate-300">
+                  <span class="text-[9px] text-slate-450 dark:text-slate-500 font-bold mb-1">${m.distance} km</span>
+                  <div class="w-full flex items-center gap-1">
+                    <div class="flex-1 border-t border-dashed border-slate-300 dark:border-slate-700"></div>
+                    <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-slate-350 dark:text-slate-600 shrink-0"></i>
+                    <div class="flex-1 border-t border-dashed border-slate-300 dark:border-slate-700"></div>
+                  </div>
+                  <span class="text-[9px] font-black px-2 py-0.5 rounded mt-2 uppercase tracking-wide shrink-0 ${this.getBadgeColor(m.platform)}">${m.platform}</span>
+               </div>
+
+               <div class="col-span-4 flex flex-col text-right pr-2">
+                 <span class="text-[9px] text-slate-400 font-extrabold uppercase tracking-widest mb-1.5 block">Arrivée</span>
+                 <span class="font-extrabold text-slate-850 dark:text-slate-100 text-[13px] md:text-sm truncate" title="${m.to}">${m.to}</span>
+               </div>
+            </div>
+            
+            <!-- Pricing -->
+            <div class="ml-4 md:ml-6 flex items-center gap-4 pl-4 md:pl-6 border-l border-slate-100 dark:border-slate-800 min-w-[110px] justify-end">
+               <div class="flex flex-col text-right">
+                 <span class="font-black font-mono text-[#059669] dark:text-emerald-400 text-sm md:text-base leading-none">${m.price.toFixed(2)} €</span>
+                 <span class="text-[9px] font-bold text-slate-400 mt-1">${(m.price/m.distance).toFixed(3)} €/km</span>
+               </div>
+            </div>
+          </div>
           
-          <!-- Pricing & Action -->
-          <div class="ml-4 md:ml-6 flex items-center gap-4 pl-4 md:pl-6 border-l border-slate-100 dark:border-slate-800 min-w-[110px] justify-between">
-             <div class="flex flex-col text-right">
-               <span class="font-black font-mono text-[#059669] dark:text-emerald-400 text-sm md:text-base leading-none">${m.price.toFixed(2)} €</span>
-               <span class="text-[9px] font-bold text-slate-400 mt-1">${(m.price/m.distance).toFixed(3)} €/km</span>
-             </div>
-             
+          <!-- Shared Action Remove button -->
+          <div class="ml-3 sm:ml-4 pl-3 sm:pl-4 border-l border-slate-100 dark:border-slate-800 shrink-0 self-center">
              <button onclick="PlannerService.removeFromPlan('${m.id}')" class="p-1.5 text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors cursor-pointer" title="Retirer">
                <i data-lucide="x" class="w-4 h-4 text-slate-400"></i>
              </button>

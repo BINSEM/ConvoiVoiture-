@@ -15,7 +15,7 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚚</text></svg>">
   </head>
-  <body class="bg-slate-50 text-slate-900 dark:bg-[#0b101d] dark:text-slate-100 transition-colors duration-200 overflow-hidden">
+  <body class="bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 transition-colors duration-200 overflow-hidden">
     <div class="app-wrapper flex min-h-screen w-full select-none" id="mainLayout">
       <!-- ==========================================================================
            Sidebar Latérale Responsive
@@ -50,7 +50,7 @@
           <nav class="sidebar-nav space-y-1">
             <button data-view="dashboard" id="nav_dashboard" class="nav-item active w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-all bg-slate-800 text-white font-bold border-l-4 border-emerald-500 shadow-md">
               <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
-              <span>Tableau de Bord</span>
+              <span>Statistiques & Rentabilité</span>
             </button>
             <button data-view="planner" id="nav_planner" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-all text-slate-400 hover:bg-slate-800 hover:text-white font-semibold border-l-4 border-transparent">
               <i data-lucide="route" class="w-4 h-4 text-emerald-400"></i>
@@ -60,10 +60,11 @@
               <i data-lucide="calendar" class="w-4 h-4"></i>
               <span>Missions & Planning</span>
             </button>
-            <button data-view="stats" id="nav_stats" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-all text-slate-400 hover:bg-slate-800 hover:text-white font-semibold border-l-4 border-transparent">
-              <i data-lucide="trending-up" class="w-4 h-4"></i>
-              <span>Statistiques & Rentabilité</span>
+            <button data-view="inspection" id="nav_inspection" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-all text-slate-400 hover:bg-slate-800 hover:text-white font-semibold border-l-4 border-transparent">
+              <i data-lucide="clipboard-check" class="w-4 h-4 text-sky-450"></i>
+              <span>État des Lieux</span>
             </button>
+
             <button data-view="settings" id="nav_settings" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-all text-slate-400 hover:bg-slate-800 hover:text-white font-semibold border-l-4 border-transparent">
               <i data-lucide="sliders-horizontal" class="w-4 h-4"></i>
               <span>Paramètres & Siret</span>
@@ -108,7 +109,7 @@
            ========================================================================== -->
       <main class="app-container flex-grow flex flex-col lg:pl-0 min-w-0" id="contentWrapper">
         <!-- Top bar de navigation -->
-        <header class="app-topbar bg-white border-b border-slate-200/80 dark:bg-[#121927] dark:border-slate-800/80 px-3 py-2.5 xs:px-4 xs:py-3 lg:px-6 lg:py-4 flex items-center justify-between sticky top-0 z-35 backdrop-blur shadow-sm transition-all duration-200">
+        <header class="app-topbar bg-white border-b border-slate-200/80 dark:bg-slate-900 dark:border-slate-800/80 px-3 py-2.5 xs:px-4 xs:py-3 lg:px-6 lg:py-4 flex items-center justify-between sticky top-0 z-35 backdrop-blur shadow-sm transition-all duration-200">
           <div class="flex items-center gap-2">
             <button id="sidebarToggle" class="hidden p-1.5 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-850 cursor-pointer transition-colors" onclick="document.getElementById('sidebarPanel').classList.remove('-translate-x-full'); document.getElementById('sidebarOverlay').classList.remove('hidden')" title="Afficher le menu">
               <i data-lucide="menu" class="w-5 h-5"></i>
@@ -127,6 +128,7 @@
             <button id="theme-toggle" class="p-1.5 xs:p-2 rounded-lg xs:rounded-xl border border-slate-200 dark:border-slate-850 bg-slate-50 hover:bg-slate-120 dark:bg-slate-800/60 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 cursor-pointer flex items-center gap-1.5 transition-all" title="Alterner les thèmes de l'interface">
               <i data-lucide="sun" id="theme-icon-light" class="w-3.5 h-3.5"></i>
               <i data-lucide="moon" id="theme-icon-dark" class="w-3.5 h-3.5 hidden"></i>
+              <i data-lucide="laptop" id="theme-icon-system" class="w-3.5 h-3.5 hidden"></i>
               <span class="text-[11px] font-semibold hidden sm:inline" id="theme-toggle-text">Mode Clair</span>
             </button>
 
@@ -171,7 +173,7 @@
             <div id="upcoming-missions-alert" class="hidden transition-all duration-300"></div>
 
             <!-- Barre d'optimisation / Filtrage & Tri Temporels -->
-            <div class="bg-white dark:bg-[#151d30] p-3.5 sm:p-4 rounded-xl sm:rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col xl:flex-row xl:items-center gap-3 sm:gap-4 justify-between">
+            <div class="bg-white dark:bg-slate-900 p-3.5 sm:p-4 rounded-xl sm:rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col xl:flex-row xl:items-center gap-3 sm:gap-4 justify-between">
               <div class="flex items-center gap-3">
                 <div class="p-2.5 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 rounded-xl">
                   <i data-lucide="sliders-horizontal" class="w-5 h-5"></i>
@@ -250,7 +252,7 @@
             <!-- Grille Spécifique Expert Comptable (CA Mensuel, CA Trimestriel, CA Annuel) -->
             <div id="accountant_kpi_grid" class="hidden grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-6 mb-6">
               <!-- CA Mensuel -->
-              <div class="bg-white dark:bg-[#151d30] p-6 sm:p-7 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm relative overflow-hidden kpi-card-premium kpi-stagger-1">
+              <div class="bg-white dark:bg-slate-900 p-6 sm:p-7 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm relative overflow-hidden kpi-card-premium kpi-stagger-1">
                 <div class="flex items-center justify-between mb-4">
                   <span class="text-[11px] font-extrabold text-slate-400 dark:text-slate-400 uppercase tracking-widest block">Chiffre d'Affaires Mensuel</span>
                   <div class="w-11 h-11 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 flex items-center justify-center border border-blue-100 dark:border-blue-900/30 transition-transform group-hover:scale-110">
@@ -262,7 +264,7 @@
               </div>
 
               <!-- CA Trimestriel -->
-              <div class="bg-white dark:bg-[#151d30] p-6 sm:p-7 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm relative overflow-hidden kpi-card-premium kpi-stagger-2">
+              <div class="bg-white dark:bg-slate-900 p-6 sm:p-7 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm relative overflow-hidden kpi-card-premium kpi-stagger-2">
                 <div class="flex items-center justify-between mb-4">
                   <span class="text-[11px] font-extrabold text-slate-400 dark:text-slate-400 uppercase tracking-widest block">Chiffre d'Affaires Trimestriel</span>
                   <div class="w-11 h-11 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center border border-indigo-100 dark:border-indigo-900/30 transition-transform group-hover:scale-110">
@@ -274,7 +276,7 @@
               </div>
 
               <!-- CA Annuel -->
-              <div class="bg-white dark:bg-[#151d30] p-6 sm:p-7 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm relative overflow-hidden bg-gradient-to-tr from-emerald-500/5 to-transparent kpi-card-premium kpi-stagger-3">
+              <div class="bg-white dark:bg-slate-900 p-6 sm:p-7 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm relative overflow-hidden bg-gradient-to-tr from-emerald-500/5 to-transparent kpi-card-premium kpi-stagger-3">
                 <div class="flex items-center justify-between mb-4">
                   <span class="text-[11px] font-extrabold text-slate-400 dark:text-slate-400 uppercase tracking-widest block font-sans">Chiffre d'Affaires Annuel</span>
                   <div class="w-11 h-11 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border border-emerald-100 dark:border-emerald-900/30 transition-transform group-hover:scale-110">
@@ -288,7 +290,7 @@
 
             <!-- Section Rapport Complet 'Tableau de Bord' pour l'Expert Comptable -->
             <div id="accountant_report_section" class="hidden space-y-6">
-              <div class="bg-white dark:bg-[#151d30] p-6 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-5">
+              <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-5">
                 <!-- Entête du rapport -->
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800/60 pb-5">
                   <div class="flex items-center gap-3">
@@ -362,7 +364,7 @@
             <div id="db_kpi_grid_admin" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-6">
               
               <!-- Revenus Bruts (CA) -->
-              <div class="bg-white dark:bg-[#151d30] p-5 sm:p-6 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm relative overflow-hidden kpi-card-premium kpi-stagger-1 select-none flex flex-col justify-between">
+              <div class="bg-white dark:bg-slate-900 p-5 sm:p-6 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm relative overflow-hidden kpi-card-premium kpi-stagger-1 select-none flex flex-col justify-between">
                 <div>
                   <div class="flex items-center justify-between mb-4">
                     <span class="text-[11px] font-extrabold text-slate-450 dark:text-slate-400 uppercase tracking-widest block">Revenus Bruts (CA)</span>
@@ -394,7 +396,7 @@
               </div>
 
               <!-- Total Missions -->
-              <div class="bg-white dark:bg-[#151d30] p-5 sm:p-6 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm relative overflow-hidden kpi-card-premium kpi-stagger-3 select-none flex flex-col justify-between">
+              <div class="bg-white dark:bg-slate-900 p-5 sm:p-6 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm relative overflow-hidden kpi-card-premium kpi-stagger-3 select-none flex flex-col justify-between">
                 <div>
                   <div class="flex items-center justify-between mb-4">
                     <span class="text-[11px] font-extrabold text-slate-450 dark:text-slate-400 uppercase tracking-widest block">Missions Livrées</span>
@@ -411,7 +413,7 @@
               </div>
 
               <!-- Dépenses totales -->
-              <div class="bg-white dark:bg-[#151d30] p-5 sm:p-6 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm relative kpi-card-premium kpi-stagger-4 select-none flex flex-col justify-between">
+              <div class="bg-white dark:bg-slate-900 p-5 sm:p-6 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm relative kpi-card-premium kpi-stagger-4 select-none flex flex-col justify-between">
                 <div>
                   <div class="flex items-center justify-between mb-3">
                     <span class="text-[11px] text-slate-450 dark:text-slate-400 uppercase tracking-widest font-extrabold">Total Dépenses</span>
@@ -434,7 +436,7 @@
             </div>
 
             <!-- Divulgation Progressive : Statistiques Financières Avancées -->
-            <div class="bg-slate-50/40 dark:bg-slate-905/20 border border-slate-200/60 dark:border-slate-800/40 p-4 rounded-3xl mb-6">
+            <div class="bg-slate-50/40 dark:bg-slate-900/20 border border-slate-200/60 dark:border-slate-800/40 p-4 rounded-3xl mb-6">
               <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
                 <div class="flex items-center gap-2.5">
                   <div class="w-1.5 h-6 bg-indigo-500 rounded-full"></div>
@@ -457,7 +459,7 @@
                 <div id="db_kpi_grid_admin_2" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mt-4">
                   
                   <!-- Charges URSSAF -->
-                  <div class="bg-white dark:bg-[#151d30] p-5 sm:p-6 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm relative overflow-hidden kpi-card-premium select-none">
+                  <div class="bg-white dark:bg-slate-900 p-5 sm:p-6 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm relative overflow-hidden kpi-card-premium select-none">
                     <div class="flex items-center justify-between mb-4">
                       <span class="text-[11px] font-extrabold text-slate-455 dark:text-slate-400 uppercase tracking-widest block" id="stat_charges_urssaf_label">Cotisations (23%)</span>
                       <div class="w-10 h-10 rounded-xl bg-rose-50 dark:bg-rose-950/35 text-rose-600 dark:text-rose-400 flex items-center justify-center border border-rose-100/40 dark:border-rose-900/10">
@@ -469,7 +471,7 @@
                   </div>
 
                   <!-- Bénéfice Après Cotisations (Net) -->
-                  <div class="bg-white dark:bg-[#151d30] p-5 sm:p-6 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm relative overflow-hidden bg-gradient-to-tr from-emerald-500/5 to-transparent kpi-card-premium select-none">
+                  <div class="bg-white dark:bg-slate-900 p-5 sm:p-6 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm relative overflow-hidden bg-gradient-to-tr from-emerald-500/5 to-transparent kpi-card-premium select-none">
                     <div class="flex items-center justify-between mb-4">
                       <span class="text-[11px] font-extrabold text-slate-450 dark:text-slate-400 uppercase tracking-widest block">Solde Après Charges</span>
                       <div class="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-950/35 text-indigo-600 dark:text-indigo-455 flex items-center justify-center border border-indigo-100/40 dark:border-indigo-900/10">
@@ -481,7 +483,7 @@
                   </div>
 
                   <!-- Bénéfice net (Bénéfice Commercial) -->
-                  <div class="bg-white dark:bg-[#151d30] p-5 sm:p-6 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm bg-gradient-to-tr from-emerald-550/5 to-transparent kpi-card-premium select-none flex flex-col justify-between">
+                  <div class="bg-white dark:bg-slate-900 p-5 sm:p-6 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm bg-gradient-to-tr from-emerald-550/5 to-transparent kpi-card-premium select-none flex flex-col justify-between">
                     <div>
                       <div class="flex items-center justify-between mb-3">
                         <span class="text-[11px] text-slate-450 dark:text-slate-400 uppercase tracking-widest font-extrabold">Bénéfice Net</span>
@@ -493,7 +495,7 @@
                   </div>
 
                   <!-- Rentabilité moyenne kilométrique -->
-                  <div class="bg-white dark:bg-[#151d30] p-5 sm:p-6 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm kpi-card-premium select-none flex flex-col justify-between">
+                  <div class="bg-white dark:bg-slate-900 p-5 sm:p-6 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm kpi-card-premium select-none flex flex-col justify-between">
                     <div>
                       <div class="flex items-center justify-between mb-3">
                         <span class="text-[11px] text-slate-450 dark:text-slate-400 uppercase tracking-widest font-extrabold">Rentabilité Moyenne</span>
@@ -511,7 +513,7 @@
             </div>
 
             <!-- Section Pliable : Rapports d'Activité, Graphiques & Échéancier Mensuel -->
-            <div class="bg-slate-50/40 dark:bg-slate-905/20 border border-slate-200/60 dark:border-slate-800/40 p-4 rounded-3xl">
+            <div class="bg-slate-50/40 dark:bg-slate-900/20 border border-slate-200/60 dark:border-slate-800/40 p-4 rounded-3xl">
               <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
                 <div class="flex items-center gap-2.5">
                   <div class="w-1.5 h-6 bg-blue-500 rounded-full"></div>
@@ -534,7 +536,7 @@
                 <!-- Grille d'Analyse d'activité (Charts) -->
                 <div id="db_charts_group_1" class="grid grid-cols-1 lg:grid-cols-12 gap-6">
                   <!-- Graphique Évolution Mensuelle -->
-                  <div class="bg-white dark:bg-[#151d30] p-4 sm:p-5 rounded-xl sm:rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm lg:col-span-8 flex flex-col justify-between">
+                  <div class="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-xl sm:rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm lg:col-span-8 flex flex-col justify-between">
                     <div class="flex items-center justify-between mb-4 border-b border-slate-100 dark:border-slate-800 pb-3">
                       <div>
                         <h3 class="font-bold text-slate-900 dark:text-white text-base">Historique financier d'activité</h3>
@@ -548,7 +550,7 @@
                   </div>
 
                   <!-- Analyse Fine par Poste de Coûts -->
-                  <div class="bg-white dark:bg-[#151d30] p-4 sm:p-5 rounded-xl sm:rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm lg:col-span-4 flex flex-col justify-between font-medium">
+                  <div class="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-xl sm:rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm lg:col-span-4 flex flex-col justify-between font-medium">
                     <div class="flex items-center justify-between mb-4 border-b border-slate-100 dark:border-slate-800 pb-3">
                       <div>
                         <h3 class="font-bold text-slate-900 dark:text-white text-base">Postes d'Exploitation</h3>
@@ -607,7 +609,7 @@
                 </div>
 
                 <!-- NOUVEAU : Échéancier & Déclarations URSSAF Mensuelles -->
-                <div id="db_urssaf_reporting_card" class="bg-white dark:bg-[#151d30] p-4 sm:p-5 rounded-xl sm:rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col gap-4">
+                <div id="db_urssaf_reporting_card" class="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-xl sm:rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col gap-4">
                   <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-850 pb-3">
                     <div>
                       <h3 class="font-bold text-slate-900 dark:text-white text-base">Échéancier & Déclarations URSSAF</h3>
@@ -630,7 +632,7 @@
                 <!-- Grille bas : Statistiques d'optimisation pro -->
                 <div id="db_charts_group_2" class="grid grid-cols-1 lg:grid-cols-2 gap-6 pb-2">
                   <!-- Planning hebdomadaire rapide -->
-                  <div class="bg-white dark:bg-[#151d30] p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col justify-between">
+                  <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col justify-between">
                     <div class="flex items-center justify-between mb-4 pb-2 border-b border-slate-100 dark:border-slate-800">
                       <div>
                         <h3 class="font-bold text-slate-900 dark:text-white text-base">Distance & Logistique</h3>
@@ -657,7 +659,7 @@
                   </div>
 
                   <!-- Évolution Hebdomadaire -->
-                  <div class="bg-white dark:bg-[#151d30] p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col justify-between">
+                  <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col justify-between">
                     <div class="flex items-center justify-between mb-4 pb-2 border-b border-slate-100 dark:border-slate-800">
                       <div>
                         <h3 class="font-bold text-slate-900 dark:text-white text-base">Rentabilité par semaine</h3>
@@ -667,6 +669,101 @@
                     </div>
                     <div class="h-32">
                       <canvas id="weeklyChart"></canvas>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- STATISTIQUES & RENTABILITÉ INTÉGRÉES -->
+                <div class="border-t border-slate-150 dark:border-slate-850 pt-6 space-y-6">
+                  <div class="flex items-center gap-2.5">
+                    <div class="w-1.5 h-6 bg-gradient-to-b from-indigo-500 to-blue-600 rounded-full"></div>
+                    <div>
+                      <h4 class="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider font-sans">
+                        Analyses Avancées de Rentabilité
+                      </h4>
+                      <p class="text-[10px] text-slate-500 dark:text-slate-400 font-medium font-sans">Performance par plateforme et corrélation distance-marge</p>
+                    </div>
+                  </div>
+
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Graphe Revenus/Bénéfices par mois -->
+                    <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm">
+                      <div class="mb-4 border-b border-slate-100 dark:border-slate-850 pb-3 flex items-center justify-between">
+                        <div>
+                          <h4 class="font-bold text-slate-900 dark:text-white text-sm">Revenus & Bénéfices Cumulés</h4>
+                          <p class="text-[10px] text-slate-400 font-medium font-sans">Comparatif brut vs net d'exploitation</p>
+                        </div>
+                        <i data-lucide="bar-chart-3" class="w-4 h-4 text-emerald-500"></i>
+                      </div>
+                      <div class="h-64">
+                        <canvas id="largeStatsRevenueChart"></canvas>
+                      </div>
+                    </div>
+
+                    <!-- Graphe Parts Platform -->
+                    <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm">
+                      <div class="mb-4 border-b border-slate-100 dark:border-slate-850 pb-3 flex items-center justify-between">
+                        <div>
+                          <h4 class="font-bold text-slate-900 dark:text-white text-sm">Volume d'Affaires par Plateforme</h4>
+                          <p class="text-[10px] text-slate-400 font-medium font-sans">Ventilation des parts de marché d'exploitation</p>
+                        </div>
+                        <i data-lucide="pie-chart" class="w-4 h-4 text-indigo-500"></i>
+                      </div>
+                      <div class="h-64 flex items-center justify-center">
+                        <div class="w-full max-w-xs h-full relative">
+                          <canvas id="largePlatformStatsChart"></canvas>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Nuage de points corrélation KM / Bénéfice -->
+                  <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm">
+                    <div class="mb-4 flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-850 pb-3">
+                      <div>
+                        <h4 class="font-bold text-slate-900 dark:text-white text-sm">Corrélation Kilométrage & Bénéfice Net</h4>
+                        <p class="text-[10px] text-slate-400 font-medium font-sans">Optimisation des gains réels de convoyage par distance parcours</p>
+                      </div>
+                      <div class="flex flex-wrap gap-1.5 text-[9px] font-bold">
+                        <span class="px-2 py-0.5 bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 rounded-md">🟢 Rentabilité ≥ 0.50 €/km</span>
+                        <span class="px-2 py-0.5 bg-blue-500/10 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-blue-500/20 rounded-md">🔵 Rentabilité standard</span>
+                        <span class="px-2 py-0.5 bg-rose-500/10 dark:bg-rose-500/20 text-rose-600 dark:text-rose-450 border border-rose-500/20 rounded-md">🔴 Rentabilité faible</span>
+                      </div>
+                    </div>
+                    <div class="h-80 sm:h-96 w-full flex items-center justify-center relative">
+                      <canvas id="mileageProfitScatterChart" class="max-w-[100%] max-h-[100%]"></canvas>
+                    </div>
+                  </div>
+
+                  <!-- Radar performance plates-formes & optimisation -->
+                  <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 pb-2">
+                    <div class="lg:col-span-7 bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm">
+                      <div class="mb-4 flex items-center justify-between border-b border-slate-100 dark:border-slate-850 pb-3">
+                        <div>
+                          <h4 class="font-bold text-slate-900 dark:text-white text-sm">Indice Multicritères par Plateforme</h4>
+                          <p class="text-[10px] text-slate-400 font-medium font-sans">Radar de performance globale des 6 derniers mois (0 à 100)</p>
+                        </div>
+                        <i data-lucide="gauge" class="w-4 h-4 text-indigo-500"></i>
+                      </div>
+                      <div class="h-72 w-full flex items-center justify-center relative">
+                        <canvas id="platformRadarChart" class="max-w-[100%] max-h-[100%]"></canvas>
+                      </div>
+                    </div>
+
+                    <div class="lg:col-span-5 bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col justify-between">
+                      <div class="space-y-3">
+                        <h3 class="font-bold text-slate-900 dark:text-white text-base">Rentabilité et Retours à Vide</h3>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-sans">
+                          Le convoyage automobile de véhicule repose sur deux variables stratégiques majeures : le prix d'achat d'origine de la course (Gain Brut) et les <strong>frais de transport retour</strong>.
+                        </p>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-sans">
+                          En utilisant systématiquement des plateformes de covoiturage (BlaBlacar) ou de bus inter-régionaux (Flixbus) plutôt que des billets de train de dernière minute au tarif maximum, vous réduisez drastiquement vos dépenses et maximisez significativement vôtre profit net réel.
+                        </p>
+                      </div>
+                      <div class="mt-4 p-4 rounded-xl bg-gradient-to-tr from-indigo-50/50 to-blue-50/50 dark:from-indigo-950/20 dark:to-slate-900 border border-indigo-100/30 text-[11px] text-indigo-700 dark:text-indigo-300 font-sans">
+                        <strong class="block mb-1">💡 Règle d'Or de l'Optimisation :</strong> 
+                        Un coût moyen de transport retour maîtrisé augmente immédiatement de <span class="font-black text-emerald-600 dark:text-emerald-400">+12% à +18%</span> la marge nette dégagée sur vos convoyages.
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -681,7 +778,7 @@
           <section id="section-planner" class="space-y-6 hidden animate-fade-in">
             <!-- Header avec KPIs de Planification -->
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
-              <div class="bg-white dark:bg-[#151d30] p-3.5 sm:p-4 rounded-xl sm:rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-center gap-3 sm:gap-4">
+              <div class="bg-white dark:bg-slate-900 p-3.5 sm:p-4 rounded-xl sm:rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-center gap-3 sm:gap-4">
                 <div class="w-10 h-10 sm:w-12 sm:h-12 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-500 rounded-xl flex items-center justify-center shrink-0">
                   <i data-lucide="route" class="w-5 h-5 sm:w-6 sm:h-6"></i>
                 </div>
@@ -691,7 +788,7 @@
                 </div>
               </div>
               
-              <div class="bg-white dark:bg-[#151d30] p-3.5 sm:p-4 rounded-xl sm:rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-center justify-between px-4 sm:px-6">
+              <div class="bg-white dark:bg-slate-900 p-3.5 sm:p-4 rounded-xl sm:rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-center justify-between px-4 sm:px-6">
                 <div>
                   <span class="text-[8px] sm:text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Gain Total Tournée</span>
                   <p class="text-lg sm:text-xl font-black font-mono text-emerald-600 dark:text-emerald-400" id="sp_total_gain">0.00 €</p>
@@ -703,7 +800,7 @@
                 </div>
               </div>
 
-              <div class="sm:col-span-2 bg-white dark:bg-[#151d30] p-3 rounded-xl sm:rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-center gap-2.5 sm:gap-3">
+              <div class="sm:col-span-2 bg-white dark:bg-slate-900 p-3 rounded-xl sm:rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-center gap-2.5 sm:gap-3">
                 <div class="flex-1 flex items-center gap-2 px-3 py-1.5 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800">
                   <i data-lucide="filter" class="w-3.5 h-3.5 text-slate-400"></i>
                   <select id="sp_filter_platform" class="bg-transparent border-none text-[11px] font-bold text-slate-700 dark:text-slate-300 outline-none w-full cursor-pointer appearance-none">
@@ -730,10 +827,10 @@
             </div>
 
             <!-- Dashboard / Planner UI -->
-            <div class="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
               
-              <!-- Colonne : BACKLOG / Opportunités (Left Column - xl:col-span-4) -->
-              <div class="xl:col-span-4 bg-white dark:bg-[#151d30] border border-slate-200/80 dark:border-slate-800 rounded-3xl shadow-sm flex flex-col h-full overflow-hidden">
+              <!-- Colonne : BACKLOG / Opportunités (Left Column - lg:col-span-4) -->
+              <div class="lg:col-span-4 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl shadow-sm flex flex-col h-full overflow-hidden">
                 <div class="p-6 border-b border-slate-100 dark:border-slate-800/60 flex items-center justify-between bg-slate-50/30 dark:bg-slate-900/10">
                   <h3 class="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-widest flex items-center gap-2">
                     <i data-lucide="inbox" class="w-4 h-4 text-emerald-500"></i>
@@ -821,8 +918,8 @@
                 </div>
               </div>
 
-              <!-- Colonne : TIMELINE & CARTE / Ma Tournée Prévue (Right Column - xl:col-span-8) -->
-              <div class="xl:col-span-8 flex flex-col bg-slate-50/50 dark:bg-slate-900/10 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-2xl sm:rounded-3xl p-3 sm:p-5 relative gap-4 sm:gap-6">
+              <!-- Colonne : TIMELINE & CARTE / Ma Tournée Prévue (Right Column - lg:col-span-8) -->
+              <div class="lg:col-span-8 flex flex-col bg-slate-50/50 dark:bg-slate-900/10 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-2xl sm:rounded-3xl p-3 sm:p-5 relative gap-4 sm:gap-6">
                 <!-- Header of Route list with stats block exactly like the screenshot -->
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white/40 dark:bg-slate-950/20 p-2 rounded-2xl">
                    <h3 class="text-xs sm:text-sm font-black text-slate-800 dark:text-slate-200 uppercase tracking-widest flex items-center gap-2">
@@ -872,7 +969,7 @@
                     </div>
                   </div>
                   
-                  <div id="d3_planner_map" class="h-[280px] sm:h-[450px] w-full bg-[#f8fafc] dark:bg-[#0b0f19]/45 relative cursor-crosshair overflow-hidden group">
+                  <div id="d3_planner_map" class="h-[280px] sm:h-[450px] w-full bg-slate-50 dark:bg-slate-950/45 relative cursor-crosshair overflow-hidden group">
                      <!-- Map rendered by D3 -->
                      
                      <!-- Overlay Top Left: Satellite Status Badge -->
@@ -935,19 +1032,22 @@
                 <h2 class="text-xl lg:text-2xl font-black tracking-tight mb-1 text-slate-900 dark:text-white">Registre de Recettes et Convoyages</h2>
                 <p class="text-xs text-slate-500 dark:text-slate-400">Ajoutez, modifiez, dupliquez et filtrez vos missions de livraison.</p>
               </div>
-              <div class="flex gap-2">
+              <div class="flex flex-col xs:flex-row flex-wrap items-stretch xs:items-center gap-2 w-full sm:w-auto">
                 <input type="file" id="input_import_excel" accept=".xlsx, .xls" class="hidden" />
-                <button id="btn_import_excel" class="px-5 py-2.5 bg-indigo-600/10 text-indigo-700 hover:bg-indigo-600/20 dark:bg-indigo-500/10 dark:text-indigo-400 dark:hover:bg-indigo-500/20 rounded-xl flex items-center justify-center gap-1.5 font-bold active:scale-95 transition-all cursor-pointer">
-                  <i data-lucide="file-up" class="w-4 h-4"></i> Importer Excel
+                <button onclick="window.app.switchView('inspection')" class="xs:flex-1 sm:flex-none px-4 py-2.5 bg-sky-600/10 text-sky-700 hover:bg-sky-600/20 dark:bg-sky-550/10 dark:text-sky-400 dark:hover:bg-sky-500/20 rounded-xl flex items-center justify-center gap-1.5 font-bold active:scale-95 transition-all cursor-pointer text-xs sm:text-sm">
+                  <i data-lucide="clipboard-check" class="w-4 h-4"></i> État des Lieux
                 </button>
-                <button id="btn_add_mission" class="btn btn-primary bg-blue-600 text-white hover:bg-blue-700 w-full sm:w-auto px-5 rounded-xl flex items-center justify-center gap-1.5 font-bold shadow-md shadow-blue-500/10 active:scale-95 transition-all">
-                  <i data-lucide="plus" class="w-4 h-4"></i> Ajouter une livraison
+                <button id="btn_add_mission" class="xs:flex-1 sm:flex-none bg-blue-600 text-white hover:bg-blue-700 px-4 py-2.5 rounded-xl flex items-center justify-center gap-1.5 font-bold shadow-md shadow-blue-500/10 active:scale-95 transition-all text-xs sm:text-sm">
+                  <i data-lucide="plus" class="w-4 h-4"></i> Ajouter Mission
+                </button>
+                <button id="btn_import_excel" class="xs:flex-1 sm:flex-none px-4 py-2.5 bg-indigo-600/10 text-indigo-700 hover:bg-indigo-600/20 dark:bg-indigo-500/10 dark:text-indigo-400 dark:hover:bg-indigo-500/20 rounded-xl flex items-center justify-center gap-1.5 font-bold active:scale-95 transition-all cursor-pointer text-xs sm:text-sm">
+                  <i data-lucide="file-up" class="w-4 h-4"></i> Importer Excel
                 </button>
               </div>
             </div>
 
             <!-- Bloc filtrage moderne & interactif (Bento Filtres Style) -->
-            <div class="bg-white dark:bg-[#151d30] p-3.5 sm:p-5 rounded-xl sm:rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm grid grid-cols-1 md:grid-cols-12 gap-3 md:gap-4">
+            <div class="bg-white dark:bg-slate-900 p-3.5 sm:p-5 rounded-xl sm:rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm grid grid-cols-1 md:grid-cols-12 gap-3 md:gap-4">
               <!-- Recherche textuelle instantanée -->
               <div class="md:col-span-2 relative">
                 <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Recherche globale</label>
@@ -968,7 +1068,7 @@
                     <i data-lucide="x" class="w-3.5 h-3.5"></i>
                   </button>
                   <!-- Suggestion Dropdown container -->
-                  <div id="immat_suggestions_box" class="hidden absolute left-0 right-0 mt-1 max-h-48 overflow-y-auto bg-white dark:bg-[#151d30] border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl z-50 py-1 text-slate-900 dark:text-slate-100 font-sans">
+                  <div id="immat_suggestions_box" class="hidden absolute left-0 right-0 mt-1 max-h-48 overflow-y-auto bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl z-50 py-1 text-slate-900 dark:text-slate-100 font-sans">
                     <!-- Suggestions dynamically rendered here -->
                   </div>
                 </div>
@@ -1020,89 +1120,114 @@
                 </div>
               </div>
               <div class="md:col-span-12 border-t border-slate-100 dark:border-slate-800/60 pt-4 mt-2" id="multi_sort_panel">
-                <div class="bg-gradient-to-r from-slate-50 to-slate-100/40 dark:from-[#151d30] dark:to-slate-950/20 p-4 rounded-2xl border border-slate-200/60 dark:border-slate-800/50 shadow-sm">
-                  
-                  <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4 border-b border-slate-100 dark:border-slate-800/50 pb-3">
-                    <div class="flex items-center gap-3">
-                      <div class="p-2 bg-indigo-500/10 dark:bg-indigo-550/15 text-indigo-600 dark:text-indigo-400 rounded-xl shrink-0">
-                        <i data-lucide="arrow-down-narrow-wide" class="w-5 h-5"></i>
-                      </div>
-                      <div>
-                        <h4 class="text-sm font-black text-slate-850 dark:text-white flex items-center gap-2">
-                          Tri hiérarchique multi-critères
-                        </h4>
-                        <p class="text-[10px] text-slate-400 dark:text-slate-500 font-medium">Cumulez et priorisez vos critères de tri (Date, Gains, Kilométrage) pour une analyse ultra-précise.</p>
-                      </div>
-                    </div>
-                    
-                    <button id="btn_apply_multi_sort" class="self-end md:self-auto text-xs bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-xl shadow-sm flex items-center gap-1.5 active:scale-95 transition-all cursor-pointer">
-                      <i data-lucide="check" class="w-4 h-4"></i> Appliquer le tri
-                    </button>
-                  </div>
-
-                  <div class="grid grid-cols-1 md:grid-cols-3 gap-3" id="multi_sort_inputs">
-                    <!-- Critère 1 -->
-                    <div class="flex items-center justify-between gap-3 bg-white dark:bg-slate-900 border border-slate-150 dark:border-slate-800/80 p-3 rounded-xl shadow-xs hover:border-indigo-200/50 dark:hover:border-indigo-900/30 transition-all" id="sort_critere_wrapper_1">
-                      <div class="flex items-center gap-2">
-                        <span class="w-6 h-6 flex items-center justify-center rounded-full bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 font-black text-xs">1</span>
-                        <div class="flex flex-col">
-                          <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest block leading-none mb-1">Critère prioritaire</span>
-                          <select id="sort_field_1" class="text-xs bg-transparent border-none outline-none font-black text-slate-800 dark:text-slate-200 cursor-pointer pr-1 focus:ring-0">
-                            <option value="date" selected>📅 Date d'activité</option>
-                            <option value="gain">💶 Gain Brut (€)</option>
-                            <option value="kilometrage">🚗 Kilométrage (km)</option>
-                          </select>
+                <div class="bg-slate-50/50 dark:bg-slate-900/30 p-1 rounded-3xl border border-slate-200/60 dark:border-slate-800/60 shadow-sm">
+                  <div class="p-4 sm:p-6">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                      <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 flex items-center justify-center bg-indigo-600/10 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 rounded-xl shrink-0">
+                          <i data-lucide="arrow-down-narrow-wide" class="w-5 h-5"></i>
+                        </div>
+                        <div>
+                          <h4 class="text-sm font-black text-slate-900 dark:text-white leading-tight">
+                            Tri multi-critères
+                          </h4>
+                          <p class="text-[11px] text-slate-500 dark:text-slate-400 font-medium mt-0.5">Priorisez jusqu'à 3 critères consécutifs.</p>
                         </div>
                       </div>
-                      <div class="border-l border-slate-100 dark:border-slate-800 pl-3">
-                        <select id="sort_dir_1" class="text-xs bg-transparent border-none outline-none text-slate-550 dark:text-slate-400 font-bold cursor-pointer focus:ring-0">
-                          <option value="desc" selected>Décroissant (▼)</option>
-                          <option value="asc">Croissant (▲)</option>
-                        </select>
-                      </div>
+                      
+                      <button id="btn_apply_multi_sort" class="h-10 px-4 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-400 text-white font-black text-xs rounded-xl shadow-lg shadow-indigo-200 dark:shadow-none flex items-center justify-center gap-2 transition-all active:scale-95 active:shadow-inner cursor-pointer w-full md:w-auto shrink-0">
+                        <i data-lucide="check" class="w-4 h-4"></i> Appliquer le tri
+                      </button>
                     </div>
 
-                    <!-- Critère 2 -->
-                    <div class="flex items-center justify-between gap-3 bg-white dark:bg-slate-900 border border-slate-150 dark:border-slate-800/80 p-3 rounded-xl shadow-xs hover:border-slate-300 dark:hover:border-slate-700 transition-all" id="sort_critere_wrapper_2">
-                      <div class="flex items-center gap-2">
-                        <span class="w-6 h-6 flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-black text-xs">2</span>
-                        <div class="flex flex-col">
-                          <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest block leading-none mb-1">Sous-critère secondaire</span>
-                          <select id="sort_field_2" class="text-xs bg-transparent border-none outline-none font-black text-slate-800 dark:text-slate-200 cursor-pointer pr-1 focus:ring-0">
-                            <option value="none" selected>— Aucun —</option>
-                            <option value="date">📅 Date d'activité</option>
-                            <option value="gain">💶 Gain Brut (€)</option>
-                            <option value="kilometrage">🚗 Kilométrage (km)</option>
-                          </select>
+                    <div class="flex flex-col gap-3" id="multi_sort_inputs">
+                      <!-- Critère 1 -->
+                      <div class="flex flex-col sm:flex-row items-center gap-3 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 p-2 sm:p-3 rounded-xl shadow-xs hover:border-indigo-500 dark:hover:border-indigo-500/50 transition-all" id="sort_critere_wrapper_1">
+                        <div class="flex items-center gap-2 w-full sm:w-auto shrink-0">
+                          <span class="w-7 h-7 flex items-center justify-center rounded-lg bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-400 font-black text-xs">1</span>
+                          <span class="text-[10px] font-black text-slate-500 uppercase tracking-widest sm:hidden">Critère prioritaire</span>
+                        </div>
+                        <div class="flex flex-col w-full sm:flex-row sm:items-center gap-2 sm:gap-3 flex-1">
+                          <div class="relative flex-1">
+                            <select id="sort_field_1" class="w-full h-10 pl-3 pr-8 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold text-slate-800 dark:text-slate-200 appearance-none cursor-pointer focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500/50 outline-none transition-all">
+                              <option value="date" selected>📅 Date d'activité</option>
+                              <option value="gain">💶 Gain Brut (€)</option>
+                              <option value="kilometrage">🚗 Kilométrage (km)</option>
+                            </select>
+                            <div class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                              <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-slate-400"></i>
+                            </div>
+                          </div>
+                          <div class="relative w-full sm:w-48 shrink-0">
+                            <select id="sort_dir_1" class="w-full h-10 pl-3 pr-8 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold text-slate-600 dark:text-slate-400 appearance-none cursor-pointer focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500/50 outline-none transition-all">
+                              <option value="desc" selected>Décroissant (▼)</option>
+                              <option value="asc">Croissant (▲)</option>
+                            </select>
+                            <div class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                              <i data-lucide="sort-desc" class="w-3.5 h-3.5 text-slate-400"></i>
+                            </div>
+                          </div>
                         </div>
                       </div>
-                      <div class="border-l border-slate-100 dark:border-slate-800 pl-3">
-                        <select id="sort_dir_2" class="text-xs bg-transparent border-none outline-none text-slate-550 dark:text-slate-400 font-bold cursor-pointer focus:ring-0">
-                          <option value="desc" selected>Décroissant (▼)</option>
-                          <option value="asc">Croissant (▲)</option>
-                        </select>
-                      </div>
-                    </div>
 
-                    <!-- Critère 3 -->
-                    <div class="flex items-center justify-between gap-3 bg-white dark:bg-slate-900 border border-slate-150 dark:border-slate-800/80 p-3 rounded-xl shadow-xs hover:border-slate-300 dark:hover:border-slate-700 transition-all" id="sort_critere_wrapper_3">
-                      <div class="flex items-center gap-2">
-                        <span class="w-6 h-6 flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-black text-xs">3</span>
-                        <div class="flex flex-col">
-                          <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest block leading-none mb-1">Sous-critère tertiaire</span>
-                          <select id="sort_field_3" class="text-xs bg-transparent border-none outline-none font-black text-slate-800 dark:text-slate-200 cursor-pointer pr-1 focus:ring-0">
-                            <option value="none" selected>— Aucun —</option>
-                            <option value="date">📅 Date d'activité</option>
-                            <option value="gain">💶 Gain Brut (€)</option>
-                            <option value="kilometrage">🚗 Kilométrage (km)</option>
-                          </select>
+                      <!-- Critère 2 -->
+                      <div class="flex flex-col sm:flex-row items-center gap-3 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 p-2 sm:p-3 rounded-xl shadow-xs hover:border-slate-300 dark:hover:border-slate-700 transition-all opacity-80 hover:opacity-100" id="sort_critere_wrapper_2">
+                        <div class="flex items-center gap-2 w-full sm:w-auto shrink-0">
+                          <span class="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 font-black text-xs">2</span>
+                          <span class="text-[10px] font-black text-slate-500 uppercase tracking-widest sm:hidden">Sous-critère secondaire</span>
+                        </div>
+                        <div class="flex flex-col w-full sm:flex-row sm:items-center gap-2 sm:gap-3 flex-1">
+                          <div class="relative flex-1">
+                            <select id="sort_field_2" class="w-full h-10 pl-3 pr-8 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold text-slate-800 dark:text-slate-200 appearance-none cursor-pointer focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500/50 outline-none transition-all">
+                              <option value="none" selected>— Aucun —</option>
+                              <option value="date">📅 Date d'activité</option>
+                              <option value="gain">💶 Gain Brut (€)</option>
+                              <option value="kilometrage">🚗 Kilométrage (km)</option>
+                            </select>
+                            <div class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                              <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-slate-400"></i>
+                            </div>
+                          </div>
+                          <div class="relative w-full sm:w-48 shrink-0">
+                            <select id="sort_dir_2" class="w-full h-10 pl-3 pr-8 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold text-slate-600 dark:text-slate-400 appearance-none cursor-pointer focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500/50 outline-none transition-all">
+                              <option value="desc" selected>Décroissant (▼)</option>
+                              <option value="asc">Croissant (▲)</option>
+                            </select>
+                            <div class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                              <i data-lucide="sort-desc" class="w-3.5 h-3.5 text-slate-400"></i>
+                            </div>
+                          </div>
                         </div>
                       </div>
-                      <div class="border-l border-slate-100 dark:border-slate-800 pl-3">
-                        <select id="sort_dir_3" class="text-xs bg-transparent border-none outline-none text-slate-550 dark:text-slate-400 font-bold cursor-pointer focus:ring-0">
-                          <option value="desc" selected>Décroissant (▼)</option>
-                          <option value="asc">Croissant (▲)</option>
-                        </select>
+
+                      <!-- Critère 3 -->
+                      <div class="flex flex-col sm:flex-row items-center gap-3 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 p-2 sm:p-3 rounded-xl shadow-xs hover:border-slate-300 dark:hover:border-slate-700 transition-all opacity-80 hover:opacity-100" id="sort_critere_wrapper_3">
+                        <div class="flex items-center gap-2 w-full sm:w-auto shrink-0">
+                          <span class="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 font-black text-xs">3</span>
+                          <span class="text-[10px] font-black text-slate-500 uppercase tracking-widest sm:hidden">Sous-critère tertiaire</span>
+                        </div>
+                        <div class="flex flex-col w-full sm:flex-row sm:items-center gap-2 sm:gap-3 flex-1">
+                          <div class="relative flex-1">
+                            <select id="sort_field_3" class="w-full h-10 pl-3 pr-8 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold text-slate-800 dark:text-slate-200 appearance-none cursor-pointer focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500/50 outline-none transition-all">
+                              <option value="none" selected>— Aucun —</option>
+                              <option value="date">📅 Date d'activité</option>
+                              <option value="gain">💶 Gain Brut (€)</option>
+                              <option value="kilometrage">🚗 Kilométrage (km)</option>
+                            </select>
+                            <div class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                              <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-slate-400"></i>
+                            </div>
+                          </div>
+                          <div class="relative w-full sm:w-48 shrink-0">
+                            <select id="sort_dir_3" class="w-full h-10 pl-3 pr-8 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold text-slate-600 dark:text-slate-400 appearance-none cursor-pointer focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500/50 outline-none transition-all">
+                              <option value="desc" selected>Décroissant (▼)</option>
+                              <option value="asc">Croissant (▲)</option>
+                            </select>
+                            <div class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                              <i data-lucide="sort-desc" class="w-3.5 h-3.5 text-slate-400"></i>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -1167,7 +1292,7 @@
             <!-- RENDER DUAL : ÉRAN PC / MOBILE -->
             
             <!-- A. Écrans PC / Tablettes (Tableau Dense & Scroller) -->
-            <div class="desktop-only bg-white dark:bg-[#151d30] rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm overflow-hidden">
+            <div class="desktop-only bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm overflow-hidden">
               <div class="overflow-x-auto w-full max-w-full">
                 <table class="w-full text-left border-collapse table-auto">
                   <thead class="bg-slate-100 dark:bg-slate-900/40 text-[11px] font-extrabold text-slate-500 uppercase tracking-wider border-b border-gray-150 dark:border-gray-800 select-none">
@@ -1201,12 +1326,12 @@
                   Tri rapide :
                 </span>
                 <div class="flex gap-2">
-                  <button id="mobileSortDate" class="px-3 py-1.5 rounded-xl border text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 shadow-sm cursor-pointer border-slate-200 dark:border-slate-800 bg-white dark:bg-[#1a2333] text-slate-700 dark:text-slate-350">
+                  <button id="mobileSortDate" class="px-3 py-1.5 rounded-xl border text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 shadow-sm cursor-pointer border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-350">
                     <i data-lucide="calendar" class="w-3.5 h-3.5"></i>
                     <span>Date</span>
                     <span id="mobileSortDateArrow" class="text-[10px] text-indigo-500 dark:text-indigo-400 font-black ml-0.5">▼</span>
                   </button>
-                  <button id="mobileSortGain" class="px-3 py-1.5 rounded-xl border text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 shadow-sm cursor-pointer border-slate-200 dark:border-slate-800 bg-white dark:bg-[#1a2333] text-slate-700 dark:text-slate-350">
+                  <button id="mobileSortGain" class="px-3 py-1.5 rounded-xl border text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 shadow-sm cursor-pointer border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-350">
                     <i data-lucide="circle-dollar-sign" class="w-3.5 h-3.5"></i>
                     <span>Gain</span>
                     <span id="mobileSortGainArrow" class="text-[10px] text-slate-400 dark:text-slate-600 font-black ml-0.5">⇅</span>
@@ -1219,101 +1344,47 @@
               <!-- Rempli en temps réel par table.js -->
             </div>
 
-            <!-- Pied de Pagination -->
-            <div class="flex flex-col sm:flex-row items-center justify-between gap-4 py-2 border-t border-slate-200 dark:border-slate-800 pt-4" id="paginationBar">
-              <span class="text-xs text-slate-500 font-semibold" id="paginationInfoText">Affichage...</span>
-              
-              <div class="flex items-center gap-4">
-                <div class="flex items-center gap-1.5">
-                  <span class="text-xs text-slate-400 font-semibold">Taille</span>
-                  <select id="pageSizeSelect" class="text-xs px-2 py-1 bg-white dark:bg-[#1a2333] border border-slate-200 dark:border-slate-800 rounded-lg outline-none cursor-pointer font-bold">
-                    <option value="5">5</option>
-                    <option value="10" selected>10</option>
-                    <option value="15">15</option>
-                    <option value="25">25</option>
-                  </select>
-                </div>
-                <div class="inline-flex items-center rounded-xl bg-white dark:bg-[#151d30] border border-slate-250 dark:border-slate-850 p-1">
-                  <button id="btnPagePrev" class="p-1.5 text-slate-500 hover:text-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg disabled:opacity-40 transition-colors" disabled>
-                    <i data-lucide="chevron-left" class="w-4 h-4"></i>
-                  </button>
-                  <span class="text-xs font-bold px-3 text-slate-700 dark:text-slate-300">
-                    Page <strong id="pageNumCurrent">1</strong> / <span id="pageNumTotal">1</span>
-                  </span>
-                  <button id="btnPageNext" class="p-1.5 text-slate-500 hover:text-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg disabled:opacity-40 transition-colors" disabled>
-                    <i data-lucide="chevron-right" class="w-4 h-4"></i>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          <!-- 3. VUE : ANALYSE DES STATISTIQUES AVANCÉES -->
-          <section id="section-stats" class="space-y-6 hidden">
-            <div>
-              <h2 class="text-xl lg:text-2xl font-black tracking-tight mb-1 text-slate-900 dark:text-white">Analyse de Performance Commerciale</h2>
-              <p class="text-xs text-slate-500 dark:text-slate-400">Évaluation détaillée de votre rentabilité de convoyage par période temporelle et par donneur d'ordre.</p>
-            </div>
-
-            <!-- Grille large pour graphes additionnels -->
-            <div class="bg-white dark:bg-[#151d30] p-6 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-3">
-              <h3 class="font-bold text-slate-900 dark:text-white text-base">Optimisations des Trajets Retour de Convoyage</h3>
-              <p class="text-xs text-slate-500 leading-relaxed max-w-4xl">Le convoyage automobile repose sur deux variables stratégiques majeures : le prix d'achat de la course (Gain Brut) et les <strong>frais de transport retour à vide</strong>. En utilisant systématiquement des plateformes de covoiturage (BlaBlacar) ou de bus inter-régionaux (Flixbus) plutôt que des billets de TGV à plein tarif, vous maximisez significativement votre marge commerciale.</p>
-            </div>
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div class="bg-white dark:bg-[#151d30] p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm">
-                <h4 class="font-bold text-slate-900 dark:text-white text-sm mb-3">Revenus et Bénéfices par Mois</h4>
-                <div class="h-64">
-                  <!-- Réutilisé ou renderisé par stats.js -->
-                  <canvas id="largeStatsRevenueChart"></canvas>
-                </div>
-              </div>
-              <div class="bg-white dark:bg-[#151d30] p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm">
-                <h4 class="font-bold text-slate-900 dark:text-white text-sm mb-3">Parts de Volume d'Affaires par Plateforme</h4>
-                <div class="h-64 flex items-center justify-center">
-                  <div class="w-full max-w-xs h-full relative">
-                    <canvas id="largePlatformStatsChart"></canvas>
+            <!-- Pied de Pagination Redessiné : Design Moderne & Responsive -->
+            <div class="mt-6 flex flex-col gap-3" id="paginationBar">
+              <!-- Navigation Principale -->
+              <div class="flex items-center justify-between bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-1.5 rounded-xl shadow-sm">
+                <button id="btnPagePrev" class="w-10 h-10 flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg disabled:opacity-20 disabled:cursor-not-allowed transition-all" disabled>
+                  <i data-lucide="chevron-left" class="w-5 h-5"></i>
+                </button>
+                
+                <div class="flex flex-col items-center">
+                  <div class="flex items-center gap-2">
+                    <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest hidden sm:inline">Page</span>
+                    <strong id="pageNumCurrent" class="text-base font-black text-slate-900 dark:text-white leading-none">1</strong>
+                    <span class="text-slate-300 dark:text-slate-700 font-medium">/</span>
+                    <span id="pageNumTotal" class="text-xs font-bold text-slate-500">1</span>
                   </div>
                 </div>
-              </div>
-            </div>
 
-            <!-- Graphique Nuage de Points Kilométrage vs Bénéfice Net -->
-            <div class="bg-white dark:bg-[#151d30] p-6 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm shadow-slate-100/10">
-              <div class="mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800/85 pb-3">
-                <div>
-                  <h4 class="font-black text-slate-900 dark:text-white text-sm">Corrélation Kilométrage & Bénéfice Net (Analyse de Rentabilité)</h4>
-                  <p class="text-[11px] text-slate-500 dark:text-slate-400">Croisement de la distance de chaque trajet avec son gain net d'exploitation, permettant d'identifier les missions à haute valeur ajoutée.</p>
-                </div>
-                <div class="flex flex-wrap gap-2 text-[9px] font-bold">
-                  <span class="px-2 py-0.5 bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 rounded-md">🟢 Rentabilité de pointe (≥ 0.50 €/km)</span>
-                  <span class="px-2 py-0.5 bg-blue-500/10 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-blue-500/20 rounded-md">🔵 Rentabilité intermédiaire</span>
-                  <span class="px-2 py-0.5 bg-rose-500/10 dark:bg-rose-500/20 text-rose-600 dark:text-rose-450 border border-rose-500/20 rounded-md">🔴 Rentabilité faible / Déficitaire</span>
-                </div>
+                <button id="btnPageNext" class="w-10 h-10 flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg disabled:opacity-20 disabled:cursor-not-allowed transition-all" disabled>
+                  <i data-lucide="chevron-right" class="w-5 h-5"></i>
+                </button>
               </div>
-              <div class="h-96 w-full flex items-center justify-center relative">
-                <canvas id="mileageProfitScatterChart" class="max-w-[100%] max-h-[100%]"></canvas>
-              </div>
-            </div>
 
-            <!-- Graphique Radar Comparatif des Plateformes -->
-            <div class="bg-white dark:bg-[#151d30] p-6 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm shadow-slate-100/10">
-              <div class="mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800/85 pb-3">
-                <div>
-                  <h4 class="font-black text-slate-900 dark:text-white text-sm">Radar de Performance Commerciale (6 derniers mois)</h4>
-                  <p class="text-[11px] text-slate-500 dark:text-slate-400">Comparatif d'exploitation normalisé sur une échelle de 0 à 100.</p>
+              <!-- Infos Secondaires & Paramètres -->
+              <div class="flex flex-col sm:flex-row items-center gap-3">
+                <div class="flex-1 w-full flex items-center justify-center sm:justify-start px-4 py-2 bg-slate-50/50 dark:bg-slate-950/40 border border-dashed border-slate-200 dark:border-slate-800/80 rounded-xl">
+                  <span class="text-xs font-bold text-slate-500 dark:text-slate-400 flex items-center gap-2" id="paginationInfoText">
+                    <i data-lucide="info" class="w-3.5 h-3.5 text-indigo-400"></i>
+                    Chargement des missions...
+                  </span>
                 </div>
-                <div class="flex flex-wrap gap-2 text-[9px] font-bold text-slate-400">
-                  <span class="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 rounded-md">📈 Volume d'activité</span>
-                  <span class="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 rounded-md">💰 Gain moyen course</span>
-                  <span class="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 rounded-md">📊 Marge d'exploitation</span>
-                  <span class="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 rounded-md">🚗 Rentabilité KM</span>
-                  <span class="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 rounded-md">🏠 Optimisation du retour</span>
+                
+                <div class="flex items-center gap-3 px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xs shrink-0 self-center">
+                  <span class="text-[10px] font-black uppercase text-slate-400 tracking-tight">Afficher</span>
+                  <div class="h-4 w-px bg-slate-100 dark:bg-slate-800"></div>
+                  <select id="pageSizeSelect" class="text-xs font-black text-indigo-600 dark:text-indigo-400 bg-transparent border-none focus:ring-0 cursor-pointer p-0 h-auto outline-none transition-colors">
+                    <option value="5">5</option>
+                    <option value="10" selected>10</option>
+                    <option value="25">25</option>
+                    <option value="50">50</option>
+                  </select>
                 </div>
-              </div>
-              <div class="h-96 w-full flex items-center justify-center relative">
-                <canvas id="platformRadarChart" class="max-w-[100%] max-h-[100%]"></canvas>
               </div>
             </div>
           </section>
@@ -1328,7 +1399,7 @@
 
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <!-- Formulaire paramètres de facturation -->
-              <div class="bg-white dark:bg-[#151d30] p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm lg:col-span-2 space-y-4">
+              <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm lg:col-span-2 space-y-4">
                 <h3 class="font-bold text-slate-900 dark:text-white text-base border-b border-slate-100 dark:border-slate-800 pb-2">Informations de l'Auto-Entreprise</h3>
                 
                 <form id="settingsForm" class="space-y-4">
@@ -1491,9 +1562,9 @@
               <!-- Zone de droite: Actions Cloud & Urgence -->
               <div class="lg:col-span-1 flex flex-col gap-6">
                 <!-- Synchronisation Google Drive -->
-                <div class="bg-white dark:bg-[#151d30] p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col gap-4">
+                <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col gap-4">
                   <div>
-                    <h3 class="font-bold text-indigo-600 dark:text-indigo-400 text-base border-b border-indigo-100 dark:border-[#1e2a4a] pb-2 flex items-center gap-2">
+                    <h3 class="font-bold text-indigo-600 dark:text-indigo-400 text-base border-b border-indigo-100 dark:border-indigo-900/40 pb-2 flex items-center gap-2">
                       <i data-lucide="cloud" class="w-5 h-5"></i>
                       Synchronisation Google Cloud
                     </h3>
@@ -1524,7 +1595,7 @@
                 </div>
 
                 <!-- Zone de danger d'usine -->
-                <div class="bg-white dark:bg-[#151d30] p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col justify-between gap-4">
+                <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col justify-between gap-4">
                   <div>
                     <h3 class="font-bold text-rose-50-text-base border-b border-rose-100 dark:border-rose-950/20 pb-2">Actions d'Urgence</h3>
                     <p class="text-xs text-slate-500 leading-relaxed mt-2">Dépannage technique ou effacement total de l'historique de votre navigateur :</p>
@@ -1558,7 +1629,7 @@
             </div>
 
             <!-- Interface de recherche et filtre -->
-            <div class="bg-white dark:bg-[#151d30] p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row items-center gap-3">
+            <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row items-center gap-3">
               <div class="relative w-full sm:flex-grow">
                 <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-3 text-slate-400"></i>
                 <input type="text" id="admin_user_search" placeholder="Rechercher par nom, identifiant ou email..." class="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs sm:text-sm font-semibold outline-none focus:border-indigo-550 transition-colors" />
@@ -1578,7 +1649,7 @@
             </div>
 
             <!-- Table des utilisateurs -->
-            <div class="bg-white dark:bg-[#151d30] border border-slate-200/80 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm">
+            <div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm">
               <div class="overflow-x-auto min-w-full">
                 <table class="min-w-full divide-y divide-slate-200/50 dark:divide-slate-800">
                   <thead class="bg-slate-50/55 dark:bg-slate-900/40 text-[10px] uppercase font-black tracking-wider text-slate-400">
@@ -1611,7 +1682,7 @@
               <p class="text-sm text-slate-500 dark:text-slate-400 font-medium font-sans">Tracez les connexions, déconnexions, modifications de rôles et modifications d'utilisateurs.</p>
             </div>
 
-            <div class="bg-white dark:bg-[#151d30] border border-slate-200/80 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm">
+            <div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm">
               <div class="overflow-x-auto min-w-full">
                 <table class="min-w-full divide-y divide-slate-200/50 dark:divide-slate-800">
                   <thead class="bg-slate-50/55 dark:bg-slate-900/40 text-[10px] uppercase font-black tracking-wider text-slate-400">
@@ -1646,7 +1717,7 @@
               <!-- Colonne Profil & Sécurité -->
               <div class="space-y-6 lg:col-span-1">
                 <!-- Carte Profil -->
-                <div class="bg-white dark:bg-[#151d30] p-6 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-5">
+                <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-5">
                   <div class="flex items-center gap-4 border-b border-slate-100 dark:border-slate-800 pb-4">
                     <div class="w-14 h-14 bg-indigo-600 border border-indigo-400/30 text-white font-black text-xl flex items-center justify-center rounded-full shadow-md uppercase" id="account_avatar">
                       --
@@ -1676,7 +1747,7 @@
                 </div>
 
                 <!-- Carte Sécurité intégrée -->
-                <div class="bg-white dark:bg-[#151d30] p-6 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-4">
+                <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-4">
                   <h3 class="font-bold text-slate-900 dark:text-white text-base border-b border-slate-100 dark:border-slate-800 pb-2 flex items-center gap-2">
                     <i data-lucide="shield-check" class="w-5 h-5 text-emerald-505"></i>
                     Sécurité et Appareils
@@ -1712,7 +1783,7 @@
               </div>
 
               <!-- Formulaire Mot de Passe -->
-              <div class="account-actions-group bg-white dark:bg-[#151d30] p-6 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm lg:col-span-2 space-y-4">
+              <div class="account-actions-group bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm lg:col-span-2 space-y-4">
                 <h3 class="font-bold text-slate-900 dark:text-white text-base border-b border-slate-100 dark:border-slate-800 pb-2 flex items-center gap-2">
                   <i data-lucide="key" class="w-4 h-4 text-indigo-505"></i>
                   Modifier mon mot de passe
@@ -1744,7 +1815,517 @@
             </div>
 
             <!-- Section Documents (Intégrée à Mon Compte) -->
-            <div id="react-documents-root" class="bg-white dark:bg-[#151d30] rounded-2xl border border-slate-200/80 dark:border-slate-800 overflow-hidden shadow-sm flex flex-col mt-6"></div>
+            <div id="react-documents-root" class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 overflow-hidden shadow-sm flex flex-col mt-6"></div>
+          </section>
+
+          <!-- ==========================================================================
+               SECTION DÉDIÉE RAPPORT D'ÉTAT DES LIEUX (STANDALONE VIEW)
+               ========================================================================== -->
+          <section id="section-inspection" class="space-y-6 hidden">
+            <!-- Entête de page -->
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h2 class="text-xl lg:text-2xl font-black tracking-tight mb-1 text-slate-900 dark:text-white">Rapport d'État des Lieux</h2>
+                <p class="text-xs text-slate-500 dark:text-slate-400">Remplissez l'état des lieux de départ et de restitution avec preuve par photos géolocalisées.</p>
+              </div>
+              <div>
+                <button onclick="window.app.switchView('missions')" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl flex items-center gap-1.5 font-bold text-xs transition-all active:scale-95 cursor-pointer">
+                  <i data-lucide="arrow-left" class="w-4 h-4"></i> Revenir aux Missions
+                </button>
+              </div>
+            </div>
+
+            <!-- 1. Selection screen (rendered if activeMissionId is null) -->
+            <div id="ins_no_mission_view" class="space-y-4">
+              <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-4">
+                <div class="flex items-center gap-2">
+                  <i data-lucide="car" class="w-5 h-5 text-indigo-550"></i>
+                  <h3 class="font-bold text-base text-slate-900 dark:text-white">Saisie de l'état des lieux pour un convoyage</h3>
+                </div>
+                <p class="text-xs text-slate-405 leading-relaxed max-w-2xl">
+                  Veuillez choisir ou lancer une inspection sur l'une de vos missions actives de convoyage ou de livraison ci-dessous :
+                </p>
+                
+                <div id="ins_selectable_missions_list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-2">
+                  <!-- Dynamic cards go here -->
+                </div>
+              </div>
+            </div>
+
+            <!-- 2. Active workflow screen wrapping the migrated step container -->
+            <div id="ins_active_workflow_view" class="hidden grid grid-cols-1 lg:grid-cols-12 gap-6">
+              <!-- Left Sidebar details -->
+              <div class="lg:col-span-4 space-y-4">
+                <div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-5 shadow-sm space-y-4">
+                  <div class="flex items-center gap-2 pb-3 border-b border-sidebar-150 dark:border-translate-800/80">
+                    <i data-lucide="info" class="w-4 h-4 text-indigo-500"></i>
+                    <span class="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white">Véhicule Actuel</span>
+                  </div>
+                  <div class="space-y-3">
+                    <div>
+                      <span class="text-[9px] text-slate-400 block uppercase font-black">Modèle / Véhicule</span>
+                      <span id="ins_sidebar_vehicle" class="font-bold text-sm text-slate-850 dark:text-white truncate block">...</span>
+                    </div>
+                    <div>
+                      <span class="text-[9px] text-slate-400 block uppercase font-black">Immatriculation / Plaque</span>
+                      <span id="ins_sidebar_plate" class="font-mono font-bold text-xs px-2.5 py-1 bg-slate-50 dark:bg-slate-950 text-indigo-650 dark:text-indigo-400 rounded border border-slate-200/40 dark:border-slate-850 inline-block uppercase animate-pulse">...</span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 pt-1 font-sans">
+                      <div>
+                        <span class="text-[9px] text-slate-400 block uppercase font-bold">Départ</span>
+                        <span id="ins_sidebar_depart" class="text-xs font-semibold text-slate-700 dark:text-slate-300 truncate block">...</span>
+                      </div>
+                      <div>
+                        <span class="text-[9px] text-slate-400 block uppercase font-bold">Destination</span>
+                        <span id="ins_sidebar_dest" class="text-xs font-semibold text-slate-700 dark:text-slate-300 truncate block">...</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div class="pt-4 border-t border-slate-150 dark:border-slate-800/80 flex justify-between items-center">
+                    <button onclick="InspectionService.cancelSelection()" class="text-xs font-bold text-rose-500 hover:text-rose-600 dark:hover:text-rose-400 flex items-center gap-1 cursor-pointer">
+                      <i data-lucide="arrow-left" class="w-4 h-4"></i> Changer de véhicule
+                    </button>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Right: Form card housing the migrated container steps! -->
+              <div id="ins_page_form_wrapper" class="lg:col-span-8 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl shadow-sm p-6">
+                <!-- Outer wrapper for inspection steps. Nesting inside beautiful container -->
+                <div id="inspectionModal" class="flex flex-col space-y-5 select-none w-full">
+                  <!-- STEP 1: intro (Analyse pièces OCR) -->
+                  <div id="ins_step_intro" class="hidden flex-col gap-4">
+                    <div class="text-center space-y-1.5">
+                      <h4 class="font-extrabold text-base text-slate-850 dark:text-white">Numérisation Initiale de Mission</h4>
+                      <p class="text-xs text-slate-500 dark:text-slate-400">Gagnez du temps en analysant la lettre de voiture ou le mandat de convoyage.</p>
+                    </div>
+
+                    <div class="flex flex-col items-center justify-center p-6 border-2 border-dashed border-indigo-200 dark:border-indigo-900 rounded-2xl bg-indigo-50/20 dark:bg-indigo-950/10 hover:border-indigo-400 transition-all cursor-pointer relative group" onclick="InspectionService.triggerNativeCamera()">
+                      <i data-lucide="scan-line" class="w-10 h-10 text-indigo-505 mb-2 group-hover:scale-110 transition-transform"></i>
+                      <span class="text-xs font-bold text-slate-800 dark:text-white">Numériser via l'appareil photo</span>
+                      <span class="text-[10px] text-slate-400 mt-1">OCR automatique : lit la référence, kilométrages et date</span>
+                    </div>
+
+                    <div id="ins_ai_scan_loading" class="hidden flex-col items-center justify-center p-4 bg-indigo-55/10 dark:bg-slate-950 border border-indigo-150 dark:border-indigo-950 gap-2.5 rounded-xl">
+                      <div class="w-5 h-5 border-2 border-indigo-500 border-t-transparent animate-spin rounded-full"></div>
+                      <span class="text-[10px] text-indigo-650 dark:text-indigo-400 font-extrabold uppercase animate-pulse">Extraction des coordonnées...</span>
+                    </div>
+
+                    <div class="text-center text-slate-350 dark:text-slate-550 text-[10px] uppercase font-bold tracking-wider py-1">— OU —</div>
+
+                    <button onclick="InspectionService.startInspection()" class="w-full text-center py-2.5 bg-indigo-650 hover:bg-indigo-600 text-white text-xs font-extrabold rounded-xl transition-all shadow-md cursor-pointer uppercase tracking-wider">
+                      Ignorer & Saisir Manuellement
+                    </button>
+                  </div>
+
+                  <!-- STEP 2: depart_status (Informations de Départ) -->
+                  <div id="ins_step_depart_status" class="hidden flex-col gap-4">
+                    <div class="bg-indigo-50/35 dark:bg-indigo-950/15 p-3 rounded-xl border border-indigo-100/50 dark:border-indigo-950/30 flex justify-between gap-3 text-xs leading-relaxed">
+                      <div>
+                        <span class="text-[9px] text-slate-400 block uppercase font-bold">Fiche Mission rattachée</span>
+                        <span id="ins_summary_vehicle_header" class="font-bold text-slate-805 dark:text-white truncate">Identité Véhicule</span>
+                      </div>
+                      <div class="text-right">
+                        <span class="text-[9px] text-slate-400 block uppercase font-bold">Immatriculation</span>
+                        <span id="ins_summary_plate_header" class="font-bold text-indigo-650 dark:text-indigo-400 font-mono">SANS-IMMAT</span>
+                      </div>
+                    </div>
+
+                    <div class="space-y-3">
+                      <div class="grid grid-cols-2 gap-3">
+                        <div>
+                          <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Nº Contrat / Référence</label>
+                          <input type="text" id="ins_depart_ref" placeholder="Ex: CON_43292" class="w-full text-xs px-3 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl outline-none font-semibold focus:border-indigo-500 text-slate-800 dark:text-white">
+                        </div>
+                        <div>
+                          <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Client Donneur d'Ordre</label>
+                          <input type="text" id="ins_depart_client" placeholder="Ex: Otoqi / Client Privé" class="w-full text-xs px-3 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl outline-none font-semibold focus:border-indigo-500 text-slate-800 dark:text-white">
+                        </div>
+                      </div>
+
+                      <div class="grid grid-cols-2 gap-3">
+                        <div>
+                          <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Kilométrage de Départ (km)</label>
+                          <input type="number" id="ins_depart_km" placeholder="Ex: 54100" class="w-full text-xs px-3 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl outline-none font-mono font-bold focus:border-indigo-500 text-slate-800 dark:text-white">
+                        </div>
+                        <div class="flex flex-col">
+                          <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Niveau Jauge Carburant</label>
+                          <input type="hidden" id="ins_depart_fuel" value="1/2">
+                          <div class="grid grid-cols-5 gap-1 pt-0.5 text-center text-[8.5px] font-extrabold text-slate-500">
+                            <button id="fuel_btn_R" onclick="InspectionService.selectFuel('R')" type="button" class="py-1.5 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 rounded-lg hover:border-indigo-500">R</button>
+                            <button id="fuel_btn_1_4" onclick="InspectionService.selectFuel('1/4')" type="button" class="py-1.5 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 rounded-lg hover:border-indigo-500">1/4</button>
+                            <button id="fuel_btn_1_2" onclick="InspectionService.selectFuel('1/2')" type="button" class="py-1.5 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 rounded-lg hover:border-indigo-500">1/2</button>
+                            <button id="fuel_btn_3_4" onclick="InspectionService.selectFuel('3/4')" type="button" class="py-1.5 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 rounded-lg hover:border-indigo-500">3/4</button>
+                            <button id="fuel_btn_F" onclick="InspectionService.selectFuel('F')" type="button" class="py-1.5 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 rounded-lg hover:border-indigo-500">F</button>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div class="grid grid-cols-2 gap-3">
+                        <div>
+                          <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Date effective de départ</label>
+                          <input type="date" id="ins_depart_date" class="w-full text-xs px-3 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl outline-none font-bold text-slate-800 dark:text-white">
+                        </div>
+                        <div>
+                          <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Heure de départ (TDB)</label>
+                          <input type="time" id="ins_depart_time" class="w-full text-xs px-3 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl outline-none font-bold text-slate-800 dark:text-white">
+                        </div>
+                      </div>
+
+                      <!-- Dash photo area -->
+                      <div>
+                        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Cliché du Tableau de Bord (km & jauge)</label>
+                        <div class="relative h-28 bg-slate-50 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800 rounded-xl flex flex-col items-center justify-center cursor-pointer overflow-hidden group hover:border-indigo-500 transition-all border-dashed" onclick="InspectionService.viewDashPhoto('depart')">
+                          <img id="ins_preview_dash_dep" class="absolute inset-0 w-full h-full object-cover hidden" alt="Aperçu TDB Départ">
+                          <div id="ins_placeholder_dash_dep" class="flex flex-col items-center justify-center p-3 text-slate-400 dark:text-slate-500 group-hover:text-indigo-505 transition-colors">
+                            <i data-lucide="camera" class="w-7 h-7 mb-1 group-hover:scale-110 transition-transform"></i>
+                            <span class="text-[9px] font-bold uppercase tracking-widest text-center mt-1">Prendre photo TDB</span>
+                            <span class="text-[8px] italic text-slate-400">Pour valider le kilométrage</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- List of anomalies departing -->
+                      <div class="space-y-2">
+                        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">Anomalies & Dommages du départ</label>
+                        <div id="ins_departure_damages_list" class="space-y-1.5 max-h-32 overflow-y-auto"></div>
+                        <button type="button" onclick="InspectionService.openAddDamageWithStage('departure')" class="w-full text-center py-2.5 border border-dashed border-slate-200 dark:border-slate-800 hover:border-indigo-500 dark:hover:border-indigo-850 rounded-xl text-xs font-bold text-slate-550 hover:text-indigo-600 dark:text-slate-450 dark:hover:text-indigo-400 transition-all flex items-center justify-center gap-2 cursor-pointer">
+                          <i data-lucide="plus-circle" class="w-4 h-4 text-indigo-500"></i>
+                          Signaler un impact ou une rayure au départ
+                        </button>
+                      </div>
+                    </div>
+
+                    <button onclick="InspectionService.confirmDepartStatusStep()" class="w-full text-center py-3 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl transition-all uppercase shadow-md cursor-pointer mt-1 font-extrabold">
+                      Valider le départ & Signer
+                    </button>
+                  </div>
+
+                  <!-- STEP 3: depart_confirmation (Signature du conducteur) -->
+                  <div id="ins_step_depart_confirmation" class="hidden flex-col gap-4">
+                    <div class="text-center space-y-1">
+                      <h4 class="font-extrabold text-base text-slate-800 dark:text-white">Validation Légale & Signature</h4>
+                      <p class="text-xs text-slate-550 dark:text-slate-400">Veuillez certifier l'exactitude des informations relevées au départ.</p>
+                    </div>
+
+                    <div class="space-y-3">
+                      <!-- Signature Pad Wrapper -->
+                      <div class="relative bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl h-[160px] flex flex-col justify-end overflow-hidden p-2">
+                        <div id="ins_sig_placeholder" class="absolute inset-0 flex items-center justify-center text-slate-400 dark:text-slate-655 text-[11px] font-bold uppercase tracking-wider pointer-events-none z-10 select-none">
+                          Dessinez votre signature ici
+                        </div>
+                        <!-- Interactive Sig Canvas -->
+                        <canvas id="ins_sig_canvas" width="450" height="150" class="w-full h-full bg-transparent relative z-20 cursor-crosshair"></canvas>
+                      </div>
+
+                      <div class="flex items-center justify-between px-1">
+                        <button type="button" onclick="InspectionService.clearSignature()" class="text-[10px] text-red-500 hover:underline hover:text-red-400 font-extrabold uppercase tracking-wide cursor-pointer flex items-center gap-1">
+                          <i data-lucide="eraser" class="w-3.5 h-3.5"></i> Effacer signature
+                        </button>
+                        <button type="button" onclick="InspectionService.loadRealDemoValues()" class="text-[10px] text-indigo-500 hover:underline hover:text-indigo-400 font-semibold cursor-pointer">
+                          Simuler valeurs test
+                        </button>
+                      </div>
+
+                      <!-- Certify Box -->
+                      <label class="flex items-start gap-3 bg-slate-50 dark:bg-slate-950/35 p-3 rounded-xl border border-slate-200/55 dark:border-slate-800/40 cursor-pointer select-none">
+                        <input type="checkbox" id="ins_driver_confirm_check" class="rounded border-slate-350 dark:border-slate-800 text-indigo-605 focus:ring-indigo-500/50 mt-0.5 w-4 h-4 cursor-pointer" onchange="InspectionService.toggleConfirmCheck()">
+                        <span class="text-[10.5px] leading-relaxed text-slate-500 dark:text-slate-400 font-medium">
+                          Je certifie sur l'honneur avoir visualisé et relevé l'état physique exact de la carrosserie ainsi que les kilométrages et niveaux au tableau de bord.
+                        </span>
+                      </label>
+                    </div>
+
+                    <!-- Validation Button status -->
+                    <button id="ins_step_2_next_btn" onclick="InspectionService.goToArrivalStatus()" class="w-full text-center py-3 bg-slate-800 text-slate-500 cursor-not-allowed text-xs font-black rounded-xl transition-all uppercase tracking-wider" disabled>
+                      Terminer le départ (Lancement Tournée)
+                    </button>
+                  </div>
+
+                  <!-- STEP 4: arrival_inspection (Inspection Arrivée / Anomalies) -->
+                  <div id="ins_step_arrival_inspection" class="hidden flex-col gap-4">
+                    <div class="text-center space-y-1">
+                      <h4 class="font-extrabold text-base text-slate-805 dark:text-white">Anomalies de Fin de Convoyage</h4>
+                      <p class="text-xs text-slate-500 dark:text-slate-400">Signalez d'éventuels impacts ou chocs survenus durant le trajet de livraison.</p>
+                    </div>
+
+                    <div class="space-y-4">
+                      <div id="ins_arrival_damages_list" class="space-y-1.5 max-h-48 overflow-y-auto"></div>
+
+                      <button onclick="InspectionService.openAddDamageWithStage('arrival')" class="w-full text-center py-2.5 border border-dashed border-indigo-300 dark:border-indigo-900 text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 hover:border-indigo-500 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer">
+                        <i data-lucide="shield-alert" class="w-4 h-4 text-indigo-500"></i>
+                        Signaler un nouveau dégât (Carrosserie / Intérieur)
+                      </button>
+                    </div>
+
+                    <button onclick="InspectionService.showStep('arrival_status')" class="w-full text-center py-3 bg-indigo-605 hover:bg-indigo-600 text-white text-xs font-bold rounded-xl shadow-md transition-all uppercase cursor-pointer">
+                      Continuer vers la réception (Livraison)
+                    </button>
+                  </div>
+
+                  <!-- STEP 5: arrival_status (Destination / Livraison inputs) -->
+                  <div id="ins_step_arrival_status" class="hidden flex-col gap-4 font-sans">
+                    <div class="text-center space-y-1">
+                      <h4 class="font-extrabold text-base text-slate-800 dark:text-white">Relevés de Restitution</h4>
+                      <p class="text-xs text-slate-500 dark:text-slate-400">Complétez les variables finales pour archiver la fin de mission.</p>
+                    </div>
+
+                    <div class="space-y-3">
+                      <div>
+                        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Désignation Lieu d'Arrivée (Concessionnaire)</label>
+                        <input type="text" id="ins_arrival_dest_name" placeholder="Ex: Concession Peugeot Lyon Sud" class="w-full text-xs px-3 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl outline-none font-bold focus:border-indigo-500 text-slate-800 dark:text-white">
+                      </div>
+
+                      <div class="grid grid-cols-2 gap-3">
+                        <div>
+                          <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Kilométrage Restitution (km)</label>
+                          <input type="number" id="ins_arrivee_km" placeholder="Ex: 54320" class="w-full text-xs px-3 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl outline-none font-mono font-bold focus:border-indigo-500 text-slate-800 dark:text-white">
+                        </div>
+                        <div class="flex flex-col">
+                          <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Jauge Joli Restitution</label>
+                          <input type="hidden" id="ins_arrivee_fuel" value="1/2">
+                          <div class="grid grid-cols-5 gap-1 pt-0.5 text-center text-[8.5px] font-extrabold text-slate-500">
+                            <button id="arr_fuel_btn_R" onclick="InspectionService.selectArrivalFuel('R')" type="button" class="py-1.5 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 rounded-lg hover:border-indigo-500">R</button>
+                            <button id="arr_fuel_btn_1_4" onclick="InspectionService.selectArrivalFuel('1/4')" type="button" class="py-1.5 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 rounded-lg hover:border-indigo-500">1/4</button>
+                            <button id="arr_fuel_btn_1_2" onclick="InspectionService.selectArrivalFuel('1/2')" type="button" class="py-1.5 border border-slate-200 dark:border-slate-805 bg-white dark:bg-slate-950 rounded-lg hover:border-indigo-500">1/2</button>
+                            <button id="arr_fuel_btn_3_4" onclick="InspectionService.selectArrivalFuel('3/4')" type="button" class="py-1.5 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 rounded-lg hover:border-indigo-500">3/4</button>
+                            <button id="arr_fuel_btn_F" onclick="InspectionService.selectArrivalFuel('F')" type="button" class="py-1.5 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 rounded-lg hover:border-indigo-500">F</button>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div class="grid grid-cols-2 gap-3">
+                        <div>
+                          <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Date Restitution</label>
+                          <input type="date" id="ins_arrivee_date" class="w-full text-xs px-3 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl outline-none font-bold text-slate-800 dark:text-white">
+                        </div>
+                        <div>
+                          <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Heure de Livraison</label>
+                          <input type="time" id="ins_arrivee_time" class="w-full text-xs px-3 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl outline-none font-bold text-slate-800 dark:text-white">
+                        </div>
+                      </div>
+
+                      <!-- Dash photo area arrival -->
+                      <div>
+                        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Rapport Photo Tableau de Bord (Rendu)</label>
+                        <div class="relative h-28 bg-slate-50 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800 rounded-xl flex flex-col items-center justify-center cursor-pointer overflow-hidden group hover:border-indigo-500 transition-all border-dashed" onclick="InspectionService.viewDashPhoto('arrivee')">
+                          <img id="ins_preview_dash_arr" class="absolute inset-0 w-full h-full object-cover hidden" alt="Aperçu TDB Restitution">
+                          <div id="ins_placeholder_dash_arr" class="flex flex-col items-center justify-center p-3 text-slate-400 dark:text-slate-500 group-hover:text-indigo-500 transition-colors">
+                            <i data-lucide="camera" class="w-7 h-7 mb-1 group-hover:scale-110 transition-transform"></i>
+                            <span class="text-[9px] font-bold uppercase tracking-widest text-center mt-1">Prendre photo TDB Arrivee</span>
+                            <span class="text-[8px] italic text-slate-400 font-sans">Fait foi près des assureurs</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <button onclick="InspectionService.confirmArrivalStatusStep()" class="w-full text-center py-3 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl shadow-md transition-all uppercase cursor-pointer">
+                      Générer Rapport Clôture
+                    </button>
+                  </div>
+
+                  <!-- STEP 6: summary (Rapport Clôture) -->
+                  <div id="ins_step_summary" class="hidden flex-col gap-4 font-sans select-text">
+                    <div class="text-center space-y-1">
+                      <span class="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-55/10 text-indigo-650 dark:text-indigo-400 rounded-full font-bold text-[9px] uppercase hover:underline cursor-pointer" onclick="InspectionService.updateSMSLinks()">
+                        <i data-lucide="check-check" class="w-3 h-3 text-indigo-500"></i>
+                        Vérification et Archivage Final
+                      </span>
+                      <h4 class="font-extrabold text-base text-slate-808 dark:text-white">Synthèse Générale Relevée</h4>
+                      <p class="text-xs text-slate-400 font-sans">Le rapport instantané est prêt à être sauvé et synchronisé.</p>
+                    </div>
+
+                    <div class="bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-200/50 dark:border-slate-855 space-y-3.5 text-xs">
+                      <!-- Grid key-vals representation -->
+                      <div class="grid grid-cols-2 gap-y-2 text-[11px] leading-relaxed">
+                        <div><span class="text-slate-400">Date d'inspection:</span> <span id="ins_summary_date" class="font-semibold text-slate-800 dark:text-slate-200"></span></div>
+                        <div><span class="text-slate-400">Total Anomalies:</span> <span id="ins_summary_damage_count" class="font-extrabold text-red-500"></span></div>
+                        <div><span class="text-slate-400">Ref Mandat:</span> <span id="ins_summary_ref" class="font-semibold font-mono text-slate-800 dark:text-slate-200"></span></div>
+                        <div><span class="text-slate-400">Client Livré:</span> <span id="ins_summary_client" class="font-semibold text-slate-800 dark:text-slate-200"></span></div>
+                        <div><span class="text-slate-400">Modèle auto:</span> <strong id="ins_summary_vehicle" class="text-slate-900 dark:text-white uppercase font-black"></strong></div>
+                        <div><span class="text-slate-400">Immatriculation:</span> <strong id="ins_summary_plate" class="text-indigo-600 dark:text-indigo-400 font-mono"></strong></div>
+                        <div><span class="text-slate-400">Trajet:</span> <span class="font-semibold text-slate-850 dark:text-slate-300" id="ins_summary_depart"></span> ➔ <span class="font-semibold text-slate-850 dark:text-slate-300" id="ins_summary_destination"></span></div>
+                        <div><span class="text-slate-400">Gains nets:</span> <strong id="ins_summary_gain" class="text-emerald-500 text-xs"></strong></div>
+                        <div><span class="text-slate-400">Lieu d'Arrivée:</span> <span id="ins_summary_arr_dest" class="font-bold text-slate-800 dark:text-slate-200"></span></div>
+                        <div><span class="text-slate-400">Plateforme:</span> <span id="ins_summary_platform" class="font-semibold text-slate-700 dark:text-slate-300"></span></div>
+                      </div>
+
+                      <!-- Starting Restitution values -->
+                      <div class="border-t border-slate-200/50 dark:border-slate-800/80 pt-2 grid grid-cols-2 gap-2 text-[10.5px]">
+                        <div class="p-2 bg-white dark:bg-slate-900 rounded-lg border border-slate-150 dark:border-slate-855"><span class="text-slate-400 block pb-0.5">DÉPART</span>Km: <strong id="ins_summary_km"></strong> • Carburant: <strong id="ins_summary_fuel"></strong><span class="block text-[8px] text-slate-400" id="ins_summary_depart_datetime"></span></div>
+                        <div class="p-2 bg-white dark:bg-slate-900 rounded-lg border border-slate-150 dark:border-slate-855"><span class="text-slate-400 block pb-0.5">RESTITUTION</span>Km: <strong id="ins_summary_arr_km"></strong> • Carburant: <strong id="ins_summary_arr_fuel"></strong><span class="block text-[8px] text-slate-400" id="ins_summary_arrivee_datetime"></span></div>
+                      </div>
+
+                      <!-- List of anomalies generated -->
+                      <div class="space-y-1 pt-1.5">
+                        <span class="text-[9px] uppercase tracking-wider font-extrabold text-slate-400 block">Dégâts et anomalies relevés</span>
+                        <div id="ins_summary_damages" class="space-y-1.5 max-h-36 overflow-y-auto"></div>
+                      </div>
+
+                      <!-- Graphic dashboards previews -->
+                      <div class="space-y-1 pt-1.5">
+                        <span class="text-[9px] uppercase tracking-wider font-extrabold text-slate-400 block">Tableau de bord (Photos comparatives)</span>
+                        <div class="grid grid-cols-2 gap-3 text-center text-[8px] font-bold text-slate-400">
+                          <div class="relative h-20 bg-slate-100 dark:bg-slate-900 rounded-lg overflow-hidden border border-slate-200/50 dark:border-slate-855 flex items-center justify-center">
+                            <img id="ins_summary_img_dep" class="w-full h-full object-cover hidden" alt="TDB départ miniature">
+                            <div id="ins_summary_img_dep_placeholder" class="text-[8px] text-slate-505">TDB Départ N/A</div>
+                          </div>
+                          <div class="relative h-20 bg-slate-100 dark:bg-slate-900 rounded-lg overflow-hidden border border-slate-200/50 dark:border-slate-855 flex items-center justify-center">
+                            <img id="ins_summary_img_arr" class="w-full h-full object-cover hidden" alt="TDB arrivée miniature">
+                            <div id="ins_summary_img_arr_placeholder" class="text-[8px] text-slate-505">TDB RESTITUTION N/A</div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- Dynamic photo list of damages -->
+                      <div class="space-y-1 pt-1.5">
+                        <span class="text-[9px] uppercase tracking-wider font-extrabold text-slate-400 block">Photos d'Avaries Annexes</span>
+                        <div id="ins_summary_photos" class="flex gap-2.5 overflow-x-auto py-1"></div>
+                      </div>
+                    </div>
+
+                    <!-- Interactivity widgets (links, SMS etc) -->
+                    <input type="hidden" id="ins_summary_contact_phone" value="+33612345678">
+                    <textarea id="ins_summary_sms_textarea" class="hidden"></textarea>
+
+                    <div class="grid grid-cols-2 gap-2 text-center text-xs">
+                      <button id="ins_summary_sms_btn" onclick="InspectionService.copySMS()" class="py-2 px-3 border border-slate-200 dark:border-slate-850 hover:border-indigo-500 rounded-xl font-bold flex items-center justify-center gap-1 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-900 text-slate-755 dark:text-slate-350 transition-all">
+                        <i data-lucide="message-square-quote" class="w-4 h-4 text-indigo-500"></i> Copier Rapport SMS
+                      </button>
+                      <button id="ins_summary_call_btn" class="py-2 px-3 border border-slate-200 dark:border-slate-850 hover:border-indigo-500 rounded-xl font-bold flex items-center justify-center gap-1 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-900 text-slate-755 dark:text-slate-350 transition-all">
+                        <i data-lucide="phone-call" class="w-4 h-4 text-indigo-500"></i> Appeler client
+                      </button>
+                    </div>
+
+                    <div class="flex items-center justify-between px-1 text-[10px] font-semibold text-slate-400 dark:text-slate-550 border-t border-slate-100 dark:border-slate-850/60 pt-2.5 mt-1">
+                      <span>Drive Cloud Status :</span>
+                      <span id="ins_summary_drive_status"></span>
+                    </div>
+
+                    <button onclick="InspectionService.submitInspection()" class="w-full text-center py-3.5 bg-indigo-650 hover:bg-indigo-600 text-white text-xs font-extrabold rounded-xl shadow-lg shadow-indigo-500/10 cursor-pointer uppercase tracking-wider transition-all transform active:scale-95 duration-100">
+                      <i data-lucide="cloud-download" class="w-4 h-4 inline mr-1"></i> Clôturer & Synchroniser Dossier Client
+                    </button>
+                  </div>
+
+                  <!-- STEP 7: add_damage (Ajouter un dégat) -->
+                  <div id="ins_step_add_damage" class="hidden flex-col gap-4">
+                    <div class="text-center space-y-1">
+                      <h4 class="font-extrabold text-base text-slate-800 dark:text-white">Signaler un Dégât / Impact</h4>
+                      <p class="text-xs text-slate-505 dark:text-slate-400">Précisez la zone d'impact, la gravité et chargez un cliché de traçabilité.</p>
+                    </div>
+
+                    <div class="space-y-3">
+                      <div>
+                        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Localisation de la Zone</label>
+                        <select id="ins_damage_zone" class="w-full text-xs px-3 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl outline-none font-bold cursor-pointer text-slate-850 dark:text-slate-200">
+                          <option value="Avant">Avant (Carrosserie, optiques, grille)</option>
+                          <option value="Arrière">Arrière (Coffre, plaque, pare-chocs)</option>
+                          <option value="Côté Gauche">Flanc Gauche (Portes, poignées)</option>
+                          <option value="Côté Droit">Flanc Droit (Portes, poignées)</option>
+                          <option value="Toit">Capot / Pavillon / Toit</option>
+                          <option value="Pare-brise">Vitres / Vitrage / Pare-brise</option>
+                          <option value="Pneumatiques">Jantes / Pneus / Enjoliveurs</option>
+                          <option value="Intérieur">Tableau de bord / Sellerie / Volant</option>
+                        </select>
+                      </div>
+
+                      <div class="grid grid-cols-2 gap-3">
+                        <div>
+                          <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Nature de l'Avarie</label>
+                          <select id="ins_damage_type" class="w-full text-xs px-3 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl outline-none font-bold cursor-pointer text-slate-850 dark:text-slate-200">
+                            <option value="Rayure">Rayure / Éraflure</option>
+                            <option value="Bosse">Bosse / Enfoncement chocs</option>
+                            <option value="Éclat">Éclat / Impact de caillou</option>
+                            <option value="Fissure">Fissure ou fêlure</option>
+                            <option value="Tache">Tache ou salissure</option>
+                            <option value="Absence">Composant manquant</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Sévérité / Degré</label>
+                          <select id="ins_damage_severity" class="w-full text-xs px-3 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl outline-none font-bold cursor-pointer text-slate-850 dark:text-slate-200">
+                            <option value="Léger" class="text-amber-500 font-semibold">Léger (superficiel)</option>
+                            <option value="Moyen" class="text-orange-500 font-semibold">Moyen (visible à l'œil)</option>
+                            <option value="Grave" class="text-red-500 font-extrabold">Grave (structurel / cassé)</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Observations détaillées</label>
+                        <textarea id="ins_damage_notes" placeholder="Ex: Griffe de chat d'environ 10 cm sur le bas de la portière conducteur, tôle non apparente." rows="2" class="w-full text-xs px-3 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl outline-none font-medium focus:border-indigo-550 text-slate-803 dark:text-white leading-relaxed resize-none"></textarea>
+                      </div>
+
+                      <!-- Anomaly image loader -->
+                      <div>
+                        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Photo de l'impact (Avarie)</label>
+                        <div class="relative h-28 bg-slate-50 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800 rounded-xl flex flex-col items-center justify-center cursor-pointer overflow-hidden group hover:border-indigo-550 border-dashed" onclick="InspectionService.askPhotoSource('damage')">
+                          <img id="ins_preview_damage" class="absolute inset-0 w-full h-full object-cover hidden" alt="Avarie miniature">
+                          <div id="ins_placeholder_damage" class="flex flex-col items-center justify-center p-3 text-slate-400 dark:text-slate-500 group-hover:text-indigo-505 transition-colors">
+                            <i data-lucide="camera" class="w-7 h-7 mb-1 group-hover:scale-110 transition-transform"></i>
+                            <span class="text-[9px] font-bold uppercase tracking-widest text-center mt-1">Prendre photo dégât</span>
+                          </div>
+                        </div>
+                        <!-- Dynamic hidden photo input -->
+                        <input type="file" id="ins_photo_input" class="hidden" accept="image/*" onchange="InspectionService.handlePhotoUpload(event)">
+                        <div id="ins_photo_preview_container" class="hidden justify-center my-1.5 shrink-0 gap-2"></div>
+                      </div>
+                    </div>
+
+                    <div class="flex items-center gap-2 pt-1 border-t border-slate-100 dark:border-slate-850">
+                      <button onclick="InspectionService.cancelAddDamage()" class="w-1/2 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-850 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-350 font-bold text-xs rounded-xl cursor-pointer transition-colors">
+                        Annuler
+                      </button>
+                      <button onclick="InspectionService.saveDamage()" class="w-1/2 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl cursor-pointer shadow-md transition-colors font-extrabold">
+                        Enregistrer l'impact
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 3. Successful/Completed view state wrapper -->
+            <div id="section_ins_success_view" class="hidden max-w-2xl mx-auto bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-6 shadow-sm space-y-6">
+              <div id="ins_success_modal" class="flex flex-col gap-4 relative">
+                <div class="absolute top-0 right-0 flex items-center gap-2">
+                  <span id="ins_success_drive_status" class="text-[10px] font-mono"></span>
+                </div>
+                <div class="flex items-center gap-2.5 text-emerald-600 dark:text-emerald-400 font-extrabold text-base uppercase border-b border-emerald-100 dark:border-emerald-900/30 pb-2">
+                  <i data-lucide="check-circle" class="w-6 h-6 text-emerald-500 animate-bounce"></i>
+                  <span>Convoyage Mandat Clôturé !</span>
+                </div>
+                <div class="text-xs space-y-2.5">
+                  <p class="leading-relaxed font-semibold text-slate-700 dark:text-slate-300">Le rapport final de mission a été généré. Les informations clés sont archivées localement :</p>
+                  <div class="p-3.5 bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-200/50 dark:border-slate-855 leading-relaxed font-mono text-[10.5px] max-h-48 overflow-y-auto text-slate-700 dark:text-slate-300" id="ins_success_report_text"></div>
+                  <div class="space-y-1 pt-1">
+                    <label class="text-[9px] uppercase tracking-wider font-extrabold text-slate-400 block pb-1">Galerie d'images sauvegardées</label>
+                    <div id="ins_success_photos_container" class="flex gap-2 overflow-x-auto py-1 px-1"></div>
+                  </div>
+                </div>
+                <div class="flex flex-col gap-2 pt-2 border-t border-slate-100 dark:border-slate-805">
+                  <button id="btn_ins_success_drive_upload" class="w-full text-center py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 shadow-md shadow-emerald-500/15 cursor-pointer active:scale-95 transition-all">
+                    <i data-lucide="cloud-upload" class="w-4 h-4"></i> Sauvegarder dans Google Drive
+                  </button>
+                  <div class="grid grid-cols-2 gap-2 text-center text-slate-500 font-semibold text-xs">
+                    <div class="col-span-1 p-2 bg-slate-50 dark:bg-slate-950 rounded-lg border border-slate-200/40 dark:border-slate-855 flex flex-col items-center">
+                      <span class="text-[9px] text-slate-400 uppercase">Véhicule</span>
+                      <span class="font-bold text-slate-800 dark:text-slate-200 uppercase truncate max-w-full" id="ins_success_vehicle"></span>
+                    </div>
+                    <div class="col-span-1 p-2 bg-slate-50 dark:bg-slate-950 rounded-lg border border-slate-200/40 dark:border-slate-855 flex flex-col items-center">
+                      <span class="text-[9px] text-slate-405 uppercase">Immatriculation</span>
+                      <span class="font-bold text-slate-800 dark:text-slate-200 uppercase font-mono" id="ins_success_plate"></span>
+                    </div>
+                  </div>
+                  <p class="text-[9px] text-slate-400 leading-normal text-center italic mt-1">Les fichiers d'état des lieux sont enregistrés de façon structurée dans votre Drive.</p>
+                  
+                  <button onclick="InspectionService.cancelSelection()" class="w-full text-center mt-2 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-705 dark:text-slate-300 text-xs font-bold rounded-xl transition-all border border-slate-200 dark:border-slate-700 cursor-pointer">
+                    <i data-lucide="arrow-left" class="w-4 h-4 inline mr-1"></i> Quitter le rapport d'état des lieux
+                  </button>
+                </div>
+              </div>
+            </div>
           </section>
 
         </div>
@@ -1757,7 +2338,7 @@
 
     <!-- 1. MODAL CALCULATEUR DE RENTABILITÉ -->
     <div id="plannerCalculatorModal" class="fixed inset-0 z-50 items-center justify-center p-4 bg-slate-900/65 backdrop-blur-sm hidden animate-fade-in font-sans">
-      <div class="bg-white dark:bg-[#151d30] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto flex flex-col md:flex-row divide-y md:divide-y-0 md:divide-x divide-slate-150 dark:divide-slate-800">
+      <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto flex flex-col md:flex-row divide-y md:divide-y-0 md:divide-x divide-slate-150 dark:divide-slate-800">
         
         <!-- Colonne Gauche : Saisie inputs -->
         <div class="p-6 flex-1 space-y-5">
@@ -1992,14 +2573,14 @@
             </div>
 
             <!-- Cards principal bénéfice net réel -->
-            <div class="bg-white dark:bg-[#151d30] border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm text-center">
+            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm text-center">
               <span class="text-[9px] font-black uppercase text-slate-400 tracking-widest block mb-1">Bénéfice Net Réel</span>
               <div id="calc_res_profit" class="text-3xl font-black text-emerald-500 tracking-tight font-mono">0.00 €</div>
               <p class="text-[9px] text-slate-400 uppercase mt-1 font-bold">Après déduction de tous transports & repas</p>
             </div>
 
             <!-- Taux horaire réel estimé -->
-            <div class="bg-white dark:bg-[#151d30] border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm text-center">
+            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm text-center">
               <span class="text-[9px] font-black uppercase text-slate-400 tracking-widest block mb-1">Taux Horaire Réel</span>
               <div id="calc_res_hourly" class="text-2xl font-black text-slate-800 dark:text-white tracking-tight font-mono">0.00 €/h</div>
               <p class="text-[9px] text-slate-400 uppercase mt-1 font-bold">Rendement de travail horaire net</p>
@@ -2010,7 +2591,7 @@
           <div class="space-y-3 pt-6 border-t border-slate-200 dark:border-slate-800">
             <div class="space-y-1">
               <span class="text-[9px] font-black uppercase text-slate-400 tracking-widest block font-mono text-center">Recommandation</span>
-              <div id="calc_res_global" class="font-black text-xs px-3 py-1.5 rounded-lg bg-slate-200 dark:bg-slate-800 text-slate-600 text-center uppercase tracking-wide">
+              <div id="calc_res_global" class="font-black text-xs px-3 py-1.5 rounded-lg bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-center uppercase tracking-wide">
                 Indéterminé
               </div>
             </div>
@@ -2024,7 +2605,7 @@
     </div>
 
     <!-- TIROIR DE DÉTAILS DYNAMIQUE (Progressive Disclosure) -->
-    <div id="missionDetailDrawer" class="fixed inset-y-0 right-0 w-full sm:w-[480px] bg-white dark:bg-[#111827] border-l border-slate-200 dark:border-slate-800 shadow-2xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out font-sans flex flex-col hidden">
+    <div id="missionDetailDrawer" class="fixed inset-y-0 right-0 w-full sm:w-[480px] bg-white dark:bg-slate-950 border-l border-slate-200 dark:border-slate-800 shadow-2xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out font-sans flex flex-col hidden">
       <!-- Entête du Tiroir -->
       <div class="p-5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex items-center justify-between">
         <div>
@@ -2043,10 +2624,10 @@
 
     <!-- 2. MODAL D'AJOUT / MODIFICATION DE MISSION -->
     <div id="missionModal" class="fixed inset-0 z-50 items-center justify-center p-4 bg-slate-900/65 backdrop-blur-sm hidden animate-fade-in font-sans">
-      <div class="bg-white dark:bg-[#151d30] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto flex flex-col">
+      <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto flex flex-col">
         
         <!-- Entête -->
-        <div class="flex items-center justify-between p-6 border-b border-slate-100 dark:border-slate-800 sticky top-0 bg-white dark:bg-[#151d30] z-20">
+        <div class="flex items-center justify-between p-6 border-b border-slate-100 dark:border-slate-800 sticky top-0 bg-white dark:bg-slate-900 z-20">
           <div>
             <h2 id="modalTitle" class="text-lg font-black tracking-tight text-slate-900 dark:text-white uppercase flex items-center gap-2">
               Ajouter une Mission de Convoyage
@@ -2075,15 +2656,15 @@
             
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div class="relative">
-                <input type="date" id="m_date" class="w-full text-xs px-3 pt-[18px] pb-[6px] bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl outline-none font-medium text-slate-800 dark:text-slate-200 focus:border-indigo-500 focus:bg-white dark:focus:bg-[#111827] transition-all" required />
+                <input type="date" id="m_date" class="w-full text-xs px-3 pt-[18px] pb-[6px] bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl outline-none font-medium text-slate-800 dark:text-slate-200 focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-950 transition-all" required />
                 <label for="m_date" class="absolute left-3 top-1 text-[9px] font-bold text-slate-400 dark:text-slate-505 uppercase tracking-widest pointer-events-none">Date d'activité</label>
               </div>
               <div class="relative">
-                <input type="text" id="m_vehicle" placeholder=" " class="peer w-full text-xs px-3 pt-[18px] pb-[6px] bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl outline-none font-medium text-slate-800 dark:text-slate-200 focus:border-indigo-500 focus:bg-white dark:focus:bg-[#111827] transition-all" required />
+                <input type="text" id="m_vehicle" placeholder=" " class="peer w-full text-xs px-3 pt-[18px] pb-[6px] bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl outline-none font-medium text-slate-800 dark:text-slate-200 focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-950 transition-all" required />
                 <label for="m_vehicle" class="absolute left-3 top-1 text-[9px] font-bold text-slate-400 dark:text-slate-505 uppercase tracking-widest pointer-events-none transition-all duration-200 peer-placeholder-shown:text-xs peer-placeholder-shown:font-semibold peer-placeholder-shown:top-3 peer-placeholder-shown:text-slate-400 dark:peer-placeholder-shown:text-slate-505 peer-focus:top-1 peer-focus:text-[9px] peer-focus:font-bold peer-focus:text-indigo-600 dark:peer-focus:text-indigo-400">Modèle Véhicule</label>
               </div>
               <div class="relative">
-                <input type="text" id="m_immatriculation" placeholder=" " class="peer w-full text-xs px-3 pt-[18px] pb-[6px] bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl outline-none font-mono text-slate-800 dark:text-slate-200 focus:border-indigo-500 focus:bg-white dark:focus:bg-[#111827] uppercase transition-all" required />
+                <input type="text" id="m_immatriculation" placeholder=" " class="peer w-full text-xs px-3 pt-[18px] pb-[6px] bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl outline-none font-mono text-slate-800 dark:text-slate-200 focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-950 uppercase transition-all" required />
                 <label for="m_immatriculation" class="absolute left-3 top-1 text-[9px] font-bold text-slate-400 dark:text-slate-505 uppercase tracking-widest pointer-events-none transition-all duration-200 peer-placeholder-shown:text-xs peer-placeholder-shown:font-semibold peer-placeholder-shown:top-3 peer-placeholder-shown:text-slate-400 dark:peer-placeholder-shown:text-slate-505 peer-focus:top-1 peer-focus:text-[9px] peer-focus:font-bold peer-focus:text-indigo-600 dark:peer-focus:text-indigo-400">Immatriculation</label>
               </div>
             </div>
@@ -2098,30 +2679,30 @@
             
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div class="relative">
-                <input type="text" id="m_depart" placeholder=" " class="peer w-full text-xs px-3 pt-[18px] pb-[6px] bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl outline-none font-medium text-slate-800 dark:text-slate-200 focus:border-indigo-500 focus:bg-white dark:focus:bg-[#111827] transition-all" required />
+                <input type="text" id="m_depart" placeholder=" " class="peer w-full text-xs px-3 pt-[18px] pb-[6px] bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl outline-none font-medium text-slate-800 dark:text-slate-200 focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-950 transition-all" required />
                 <label for="m_depart" class="absolute left-3 top-1 text-[9px] font-bold text-slate-400 dark:text-slate-505 uppercase tracking-widest pointer-events-none transition-all duration-200 peer-placeholder-shown:text-xs peer-placeholder-shown:font-semibold peer-placeholder-shown:top-3 peer-placeholder-shown:text-slate-400 dark:peer-placeholder-shown:text-slate-505 peer-focus:top-1 peer-focus:text-[9px] peer-focus:font-bold peer-focus:text-indigo-600 dark:peer-focus:text-indigo-400">Ville de Départ</label>
               </div>
               <div class="relative">
-                <input type="text" id="m_destination" placeholder=" " class="peer w-full text-xs px-3 pt-[18px] pb-[6px] bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl outline-none font-medium text-slate-800 dark:text-slate-200 focus:border-indigo-500 focus:bg-white dark:focus:bg-[#111827] transition-all" required />
+                <input type="text" id="m_destination" placeholder=" " class="peer w-full text-xs px-3 pt-[18px] pb-[6px] bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl outline-none font-medium text-slate-800 dark:text-slate-200 focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-950 transition-all" required />
                 <label for="m_destination" class="absolute left-3 top-1 text-[9px] font-bold text-slate-400 dark:text-slate-505 uppercase tracking-widest pointer-events-none transition-all duration-200 peer-placeholder-shown:text-xs peer-placeholder-shown:font-semibold peer-placeholder-shown:top-3 peer-placeholder-shown:text-slate-400 dark:peer-placeholder-shown:text-slate-505 peer-focus:top-1 peer-focus:text-[9px] peer-focus:font-bold peer-focus:text-indigo-600 dark:peer-focus:text-indigo-400">Ville d'Arrivée</label>
               </div>
               <div class="relative">
-                <input type="number" id="m_kilometrage" placeholder=" " class="peer w-full text-xs px-3 pt-[18px] pb-[6px] bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl outline-none font-mono text-slate-850 dark:text-slate-200 focus:border-indigo-500 focus:bg-white dark:focus:bg-[#111827] transition-all" required />
+                <input type="number" id="m_kilometrage" placeholder=" " class="peer w-full text-xs px-3 pt-[18px] pb-[6px] bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl outline-none font-mono text-slate-850 dark:text-slate-200 focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-950 transition-all" required />
                 <label for="m_kilometrage" class="absolute left-3 top-1 text-[9px] font-bold text-slate-400 dark:text-slate-505 uppercase tracking-widest pointer-events-none transition-all duration-200 peer-placeholder-shown:text-xs peer-placeholder-shown:font-semibold peer-placeholder-shown:top-3 peer-placeholder-shown:text-slate-400 dark:peer-placeholder-shown:text-slate-505 peer-focus:top-1 peer-focus:text-[9px] peer-focus:font-bold peer-focus:text-indigo-600 dark:peer-focus:text-indigo-400">Distance réelle (km)</label>
               </div>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
               <div class="relative">
-                <input type="time" id="m_heureDepart" class="w-full text-xs px-3 pt-[18px] pb-[6px] bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl outline-none font-mono text-slate-850 dark:text-slate-200 focus:border-indigo-500 focus:bg-white dark:focus:bg-[#111827] transition-all" required />
+                <input type="time" id="m_heureDepart" class="w-full text-xs px-3 pt-[18px] pb-[6px] bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl outline-none font-mono text-slate-850 dark:text-slate-200 focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-950 transition-all" required />
                 <label for="m_heureDepart" class="absolute left-3 top-1 text-[9px] font-bold text-slate-400 dark:text-slate-505 uppercase tracking-widest pointer-events-none">Heure Départ</label>
               </div>
               <div class="relative">
-                <input type="time" id="m_heureArrivee" class="w-full text-xs px-3 pt-[18px] pb-[6px] bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl outline-none font-mono text-slate-850 dark:text-slate-200 focus:border-indigo-500 focus:bg-white dark:focus:bg-[#111827] transition-all" required />
+                <input type="time" id="m_heureArrivee" class="w-full text-xs px-3 pt-[18px] pb-[6px] bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl outline-none font-mono text-slate-850 dark:text-slate-200 focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-950 transition-all" required />
                 <label for="m_heureArrivee" class="absolute left-3 top-1 text-[9px] font-bold text-slate-400 dark:text-slate-505 uppercase tracking-widest pointer-events-none">Heure Arrivée</label>
               </div>
               <div class="relative">
-                <select id="m_plateforme" class="w-full text-xs px-3 pt-[18px] pb-[6px] bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl outline-none font-bold text-slate-850 dark:text-slate-200 focus:border-indigo-500 focus:bg-white dark:focus:bg-[#111827] cursor-pointer transition-all">
+                <select id="m_plateforme" class="w-full text-xs px-3 pt-[18px] pb-[6px] bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl outline-none font-bold text-slate-850 dark:text-slate-200 focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-950 cursor-pointer transition-all">
                   <option value="Otoqi">Otoqi</option>
                   <option value="Driiveme">Driiveme</option>
                   <option value="Hiflow">Hiflow</option>
@@ -2131,7 +2712,7 @@
                 <label for="m_plateforme" class="absolute left-3 top-1 text-[9px] font-bold text-slate-400 dark:text-slate-505 uppercase tracking-widest pointer-events-none">Mandataire / Client</label>
               </div>
               <div class="relative">
-                <select id="m_statut" class="w-full text-xs px-3 pt-[18px] pb-[6px] bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl outline-none font-bold text-slate-850 dark:text-slate-200 focus:border-indigo-500 focus:bg-white dark:focus:bg-[#111827] cursor-pointer transition-all">
+                <select id="m_statut" class="w-full text-xs px-3 pt-[18px] pb-[6px] bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl outline-none font-bold text-slate-850 dark:text-slate-200 focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-950 cursor-pointer transition-all">
                   <option value="En attente">En attente</option>
                   <option value="Validée">Validée</option>
                   <option value="Payée">Payée</option>
@@ -2151,27 +2732,27 @@
             
             <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
               <div class="relative">
-                <input type="number" id="m_gain" placeholder=" " class="peer w-full text-xs px-3 pt-[18px] pb-[6px] bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl outline-none font-mono text-slate-850 dark:text-slate-200 focus:border-indigo-500 focus:bg-white dark:focus:bg-[#111827] transition-all" required />
+                <input type="number" id="m_gain" placeholder=" " class="peer w-full text-xs px-3 pt-[18px] pb-[6px] bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl outline-none font-mono text-slate-850 dark:text-slate-200 focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-950 transition-all" required />
                 <label for="m_gain" class="absolute left-3 top-1 text-[9px] font-bold text-slate-400 dark:text-slate-505 uppercase tracking-widest pointer-events-none transition-all duration-200 peer-placeholder-shown:text-xs peer-placeholder-shown:font-semibold peer-placeholder-shown:top-3 peer-placeholder-shown:text-slate-400 dark:peer-placeholder-shown:text-slate-505 peer-focus:top-1 peer-focus:text-[9px] peer-focus:font-bold peer-focus:text-indigo-600 dark:peer-focus:text-indigo-400">Gain Brut (€)</label>
               </div>
               <div class="relative">
-                <input type="number" id="m_lavage" placeholder=" " class="peer w-full text-xs px-3 pt-[18px] pb-[6px] bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl outline-none font-mono text-slate-850 dark:text-slate-200 focus:border-indigo-500 focus:bg-white dark:focus:bg-[#111827] transition-all" />
+                <input type="number" id="m_lavage" placeholder=" " class="peer w-full text-xs px-3 pt-[18px] pb-[6px] bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl outline-none font-mono text-slate-850 dark:text-slate-200 focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-950 transition-all" />
                 <label for="m_lavage" class="absolute left-3 top-1 text-[9px] font-bold text-slate-400 dark:text-slate-505 uppercase tracking-widest pointer-events-none transition-all duration-200 peer-placeholder-shown:text-xs peer-placeholder-shown:font-semibold peer-placeholder-shown:top-3 peer-placeholder-shown:text-slate-400 dark:peer-placeholder-shown:text-slate-505 peer-focus:top-1 peer-focus:text-[9px] peer-focus:font-bold peer-focus:text-indigo-600 dark:peer-focus:text-indigo-400">Lavage (€)</label>
               </div>
               <div class="relative">
-                <input type="number" id="m_carburant" placeholder=" " class="peer w-full text-xs px-3 pt-[18px] pb-[6px] bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl outline-none font-mono text-slate-850 dark:text-slate-200 focus:border-indigo-500 focus:bg-white dark:focus:bg-[#111827] transition-all" />
+                <input type="number" id="m_carburant" placeholder=" " class="peer w-full text-xs px-3 pt-[18px] pb-[6px] bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl outline-none font-mono text-slate-850 dark:text-slate-200 focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-950 transition-all" />
                 <label for="m_carburant" class="absolute left-3 top-1 text-[9px] font-bold text-slate-400 dark:text-slate-505 uppercase tracking-widest pointer-events-none transition-all duration-200 peer-placeholder-shown:text-xs peer-placeholder-shown:font-semibold peer-placeholder-shown:top-3 peer-placeholder-shown:text-slate-400 dark:peer-placeholder-shown:text-slate-505 peer-focus:top-1 peer-focus:text-[9px] peer-focus:font-bold peer-focus:text-indigo-600 dark:peer-focus:text-indigo-400">Carburant (€)</label>
                 <span id="m_carburant_helper" class="text-[8px] text-slate-400 dark:text-slate-505 block mt-0.5">Calculateur...</span>
               </div>
               <div class="relative">
-                <input type="number" id="m_peage" placeholder=" " class="peer w-full text-xs px-3 pt-[18px] pb-[6px] bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl outline-none font-mono text-slate-850 dark:text-slate-200 focus:border-indigo-500 focus:bg-white dark:focus:bg-[#111827] transition-all" />
+                <input type="number" id="m_peage" placeholder=" " class="peer w-full text-xs px-3 pt-[18px] pb-[6px] bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl outline-none font-mono text-slate-850 dark:text-slate-200 focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-950 transition-all" />
                 <label for="m_peage" class="absolute left-3 top-1 text-[9px] font-bold text-slate-400 dark:text-slate-505 uppercase tracking-widest pointer-events-none transition-all duration-200 peer-placeholder-shown:text-xs peer-placeholder-shown:font-semibold peer-placeholder-shown:top-3 peer-placeholder-shown:text-slate-400 dark:peer-placeholder-shown:text-slate-505 peer-focus:top-1 peer-focus:text-[9px] peer-focus:font-bold peer-focus:text-indigo-600 dark:peer-focus:text-indigo-400">Péage (€)</label>
               </div>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div class="relative">
-                <select id="m_fraisRembourses" class="w-full text-xs px-3 pt-[18px] pb-[6px] bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl outline-none font-bold text-slate-850 dark:text-slate-200 focus:border-indigo-500 focus:bg-white dark:focus:bg-[#111827] cursor-pointer transition-all">
+                <select id="m_fraisRembourses" class="w-full text-xs px-3 pt-[18px] pb-[6px] bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl outline-none font-bold text-slate-850 dark:text-slate-200 focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-950 cursor-pointer transition-all">
                   <option value="En attente">En attente de traitement</option>
                   <option value="Partiel">Partiel (Dépense partagée)</option>
                   <option value="Oui">Oui (Totalement remboursé)</option>
@@ -2180,7 +2761,7 @@
                 <label for="m_fraisRembourses" class="absolute left-3 top-1 text-[9px] font-bold text-slate-400 dark:text-slate-505 uppercase tracking-widest pointer-events-none">Remboursement frais</label>
               </div>
               <div class="relative">
-                <select id="m_transportRetour" class="w-full text-xs px-3 pt-[18px] pb-[6px] bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl outline-none font-bold text-slate-850 dark:text-slate-200 focus:border-indigo-500 focus:bg-white dark:focus:bg-[#111827] cursor-pointer transition-all">
+                <select id="m_transportRetour" class="w-full text-xs px-3 pt-[18px] pb-[6px] bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl outline-none font-bold text-slate-850 dark:text-slate-200 focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-950 cursor-pointer transition-all">
                   <option value="Train">Train / TER</option>
                   <option value="Covoiturage">Covoiturage (BlaBlaCar)</option>
                   <option value="Bus">Bus (Flixbus/BlaBlaCar)</option>
@@ -2190,7 +2771,7 @@
                 <label for="m_transportRetour" class="absolute left-3 top-1 text-[9px] font-bold text-slate-400 dark:text-slate-505 uppercase tracking-widest pointer-events-none">Transport Retour</label>
               </div>
               <div class="relative">
-                <input type="number" id="m_prixRetour" placeholder=" " class="peer w-full text-xs px-3 pt-[18px] pb-[6px] bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl outline-none font-mono text-slate-850 dark:text-slate-200 focus:border-indigo-500 focus:bg-white dark:focus:bg-[#111827] transition-all" />
+                <input type="number" id="m_prixRetour" placeholder=" " class="peer w-full text-xs px-3 pt-[18px] pb-[6px] bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl outline-none font-mono text-slate-850 dark:text-slate-200 focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-950 transition-all" />
                 <label for="m_prixRetour" class="absolute left-3 top-1 text-[9px] font-bold text-slate-400 dark:text-slate-505 uppercase tracking-widest pointer-events-none transition-all duration-200 peer-placeholder-shown:text-xs peer-placeholder-shown:font-semibold peer-placeholder-shown:top-3 peer-placeholder-shown:text-slate-400 dark:peer-placeholder-shown:text-slate-505 peer-focus:top-1 peer-focus:text-[9px] peer-focus:font-bold peer-focus:text-indigo-600 dark:peer-focus:text-indigo-400">Prix Retour (€)</label>
               </div>
             </div>
@@ -2205,11 +2786,11 @@
             
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div class="relative">
-                <textarea id="m_observations" placeholder=" " class="peer w-full text-xs px-3 pt-[20px] pb-[6px] bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl outline-none text-slate-800 dark:text-slate-200 focus:border-indigo-500 focus:bg-white dark:focus:bg-[#111827] h-20 resize-none transition-all"></textarea>
+                <textarea id="m_observations" placeholder=" " class="peer w-full text-xs px-3 pt-[20px] pb-[6px] bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl outline-none text-slate-800 dark:text-slate-200 focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-950 h-20 resize-none transition-all"></textarea>
                 <label for="m_observations" class="absolute left-3 top-1 text-[9px] font-bold text-slate-400 dark:text-slate-505 uppercase tracking-widest pointer-events-none transition-all duration-200 peer-placeholder-shown:text-xs peer-placeholder-shown:font-semibold peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-slate-400 dark:peer-placeholder-shown:text-slate-505 peer-focus:top-1 peer-focus:text-[9px] peer-focus:font-bold peer-focus:text-indigo-600 dark:peer-focus:text-indigo-400">Observations Générales</label>
               </div>
               <div class="relative">
-                <textarea id="m_incidents" placeholder=" " class="peer w-full text-xs px-3 pt-[20px] pb-[6px] bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl outline-none text-rose-600 dark:text-rose-400 font-semibold focus:border-indigo-500 focus:bg-white dark:focus:bg-[#111827] h-20 resize-none transition-all"></textarea>
+                <textarea id="m_incidents" placeholder=" " class="peer w-full text-xs px-3 pt-[20px] pb-[6px] bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl outline-none text-rose-600 dark:text-rose-400 font-semibold focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-950 h-20 resize-none transition-all"></textarea>
                 <label for="m_incidents" class="absolute left-3 top-1 text-[9px] font-bold text-slate-400 dark:text-slate-505 uppercase tracking-widest pointer-events-none transition-all duration-200 peer-placeholder-shown:text-xs peer-placeholder-shown:font-semibold peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-slate-400 dark:peer-placeholder-shown:text-slate-505 peer-focus:top-1 peer-focus:text-[9px] peer-focus:font-bold peer-focus:text-indigo-600 dark:peer-focus:text-indigo-400">Retards ou Incidents</label>
               </div>
               <div class="relative">
@@ -2249,7 +2830,7 @@
 
     <!-- 3. MODAL CONFIRMATION DE SUPPRESSION -->
     <div id="confirmDeleteModal" class="fixed inset-0 z-50 items-center justify-center p-4 bg-slate-900/65 backdrop-blur-sm hidden animate-fade-in font-sans">
-      <div class="bg-white dark:bg-[#151d30] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl p-6 max-w-md w-full space-y-4">
+      <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl p-6 max-w-md w-full space-y-4">
         <div class="flex items-center gap-3 text-red-600 dark:text-red-400 font-extrabold text-base uppercase">
           <i data-lucide="triangle-alert" class="w-6 h-6 text-red-500"></i>
           <span>Confirmer la suppression</span>
@@ -2270,7 +2851,7 @@
 
     <!-- 4. MODAL ASTUCES / AIDE SMART PLANNER -->
     <div id="plannerHelpModal" class="fixed inset-0 z-50 items-center justify-center p-4 bg-slate-900/65 backdrop-blur-sm hidden animate-fade-in font-sans">
-      <div class="bg-white dark:bg-[#151d30] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl max-w-lg w-full p-6 space-y-5">
+      <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl max-w-lg w-full p-6 space-y-5">
         <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
           <div class="flex items-center gap-2.5 text-indigo-600 dark:text-indigo-400">
             <i data-lucide="info" class="w-5 h-5 text-indigo-500"></i>
@@ -2316,9 +2897,10 @@
     <!-- VEHICLE INSPECTION & MISSION CLÔTURE MODALS -->
     <!-- ========================================== -->
 
-    <!-- MAIN INSPECTION modal -->
-    <div id="inspectionModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4 overflow-y-auto font-sans">
-      <div class="bg-white dark:bg-[#151d30] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl max-w-lg w-full flex flex-col overflow-hidden max-h-[92vh]">
+    <!-- MAIN INSPECTION modal (Obsolete / Standalonised) -->
+    <template id="obsolete-inspection">
+    <div id="inspectionModal_obsolete" class="hidden">
+      <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl max-w-lg w-full flex flex-col overflow-hidden max-h-[92vh]">
         <!-- Modal Header -->
         <div class="bg-slate-50 dark:bg-slate-950 p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
           <div class="flex items-center gap-2 text-indigo-600 dark:text-indigo-400">
@@ -2346,7 +2928,7 @@
               <span class="text-[10px] text-slate-400 mt-1">OCR automatique : lit la référence, kilométrages et date</span>
             </div>
 
-            <div id="ins_ai_scan_loading" class="hidden flex-col items-center justify-center p-4 bg-indigo-55/10 dark:bg-[#111827] border border-indigo-150 dark:border-indigo-950 gap-2.5 rounded-xl">
+            <div id="ins_ai_scan_loading" class="hidden flex-col items-center justify-center p-4 bg-indigo-55/10 dark:bg-slate-950 border border-indigo-150 dark:border-indigo-950 gap-2.5 rounded-xl">
               <div class="w-5 h-5 border-2 border-indigo-500 border-t-transparent animate-spin rounded-full"></div>
               <span class="text-[10px] text-indigo-600 dark:text-indigo-400 font-extrabold uppercase animate-pulse">Extraction des coordonnées...</span>
             </div>
@@ -2725,6 +3307,7 @@
         </div>
       </div>
     </div>
+    </template>
 
     <!-- PHOTO SOURCE SELECTION MODAL -->
     <div id="ins_photo_source_modal" class="fixed inset-0 z-[60] bg-slate-950/80 hidden items-end sm:items-center justify-center p-4 sm:p-0 transition-opacity">
@@ -2799,12 +3382,13 @@
       </div>
     </div>
 
-    <!-- SUCCESS RECAP MODAL -->
-    <div id="ins_success_modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4">
-      <div class="bg-white dark:bg-[#151d30] border border-slate-200 dark:border-slate-800 rounded-2xl p-6 max-w-lg w-full flex flex-col gap-4 shadow-2xl relative max-h-[92vh] overflow-y-auto font-sans">
+    <!-- SUCCESS RECAP MODAL (Obsolete / Standalonised) -->
+    <template id="obsolete-success-modal">
+    <div id="ins_success_modal_obsolete" class="hidden">
+      <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 max-w-lg w-full flex flex-col gap-4 shadow-2xl relative max-h-[92vh] overflow-y-auto font-sans">
         <div class="absolute top-4 right-4 flex items-center gap-2">
-          <span id="ins_success_drive_status"></span>
-          <button onclick="document.getElementById('ins_success_modal').classList.add('hidden'); document.getElementById('ins_success_modal').classList.remove('flex'); document.body.style.overflow = '';" class="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors cursor-pointer">
+          <span id="ins_success_drive_status_obsolete"></span>
+          <button onclick="document.getElementById('ins_success_modal_obsolete').classList.add('hidden');" class="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors cursor-pointer">
             <i data-lucide="x" class="w-5 h-5"></i>
           </button>
         </div>
@@ -2814,37 +3398,38 @@
         </div>
         <div class="text-xs space-y-2.5">
           <p class="leading-relaxed font-semibold">Le rapport final de mission a été généré. Les informations clés sont archivées localement :</p>
-          <div class="p-3.5 bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-200/50 dark:border-slate-855 leading-relaxed font-mono text-[10.5px] max-h-48 overflow-y-auto text-slate-700 dark:text-slate-300" id="ins_success_report_text"></div>
+          <div class="p-3.5 bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-200/50 dark:border-slate-855 leading-relaxed font-mono text-[10.5px] max-h-48 overflow-y-auto text-slate-700 dark:text-slate-300"></div>
           <div class="space-y-1 pt-1">
             <label class="text-[9px] uppercase tracking-wider font-extrabold text-slate-400 block pb-1">Galerie d'images sauvegardées</label>
-            <div id="ins_success_photos_container" class="flex gap-2 overflow-x-auto py-1 px-1"></div>
+            <div class="flex gap-2 overflow-x-auto py-1 px-1"></div>
           </div>
         </div>
         <div class="flex flex-col gap-2 pt-2 border-t border-slate-100 dark:border-slate-850">
-          <button id="btn_ins_success_drive_upload" class="w-full text-center py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 shadow-md shadow-emerald-600/10 cursor-pointer active:scale-95 transition-all">
+          <button class="w-full text-center py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 shadow-md shadow-emerald-600/10 cursor-pointer active:scale-95 transition-all">
             <i data-lucide="cloud-upload" class="w-4 h-4"></i> Sauvegarder dans Google Drive
           </button>
           <div class="grid grid-cols-2 gap-2 text-center text-slate-500 font-semibold text-xs">
             <div class="col-span-1 p-2 bg-slate-50 dark:bg-slate-950 rounded-lg border border-slate-250/20 dark:border-slate-855 flex flex-col items-center">
               <span class="text-[9px] text-slate-400 uppercase">Véhicule</span>
-              <span class="font-bold text-slate-800 dark:text-slate-200 uppercase truncate max-w-full" id="ins_success_vehicle"></span>
+              <span class="font-bold text-slate-800 dark:text-slate-200 uppercase truncate max-w-full"></span>
             </div>
             <div class="col-span-1 p-2 bg-slate-50 dark:bg-slate-950 rounded-lg border border-slate-250/20 dark:border-slate-855 flex flex-col items-center">
               <span class="text-[9px] text-slate-400 uppercase">Immatriculation</span>
-              <span class="font-bold text-slate-800 dark:text-slate-200 uppercase font-mono" id="ins_success_plate"></span>
+              <span class="font-bold text-slate-800 dark:text-slate-200 uppercase font-mono"></span>
             </div>
           </div>
           <p class="text-[9px] text-slate-400 leading-normal text-center italic mt-1 pb-1">Les fichiers d'état des lieux sont enregistrés de façon structurée dans votre Drive.</p>
         </div>
       </div>
     </div>
+    </template>
 
     <!-- ==========================================================================
          AFFICHER L'OVERLAY DE CONNEXION SÉCURISÉE (RBAC)
          ========================================================================== -->
-    <div id="login_overlay" class="fixed inset-0 bg-white z-[100] flex flex-row font-sans overflow-hidden w-screen h-screen" style="display: flex;">
+    <div id="login_overlay" class="fixed inset-0 bg-white dark:bg-slate-950 z-[100] flex flex-row font-sans overflow-hidden w-screen h-screen" style="display: flex;">
       <!-- Left: Branded Panel (Hidden on mobile) -->
-      <div class="hidden lg:flex w-1/2 bg-[#0b101d] items-center justify-center p-12 relative overflow-hidden">
+      <div class="hidden lg:flex w-1/2 bg-slate-950 items-center justify-center p-12 relative overflow-hidden">
         <div class="absolute inset-0 bg-gradient-to-br from-blue-900/40 to-transparent"></div>
         <div class="relative text-center space-y-6">
           <div class="w-24 h-24 bg-white/10 rounded-3xl flex items-center justify-center mx-auto border border-white/20 shadow-xl backdrop-blur-sm">
@@ -2858,34 +3443,34 @@
       </div>
       
       <!-- Right: Login Form -->
-      <div class="w-full lg:w-1/2 bg-white flex items-center justify-center p-8">
+      <div class="w-full lg:w-1/2 bg-white dark:bg-slate-950 flex items-center justify-center p-8">
         <div class="w-full max-w-sm space-y-8">
           <div class="space-y-2">
-            <h2 class="text-2xl font-black text-slate-900 tracking-tight">Bienvenue</h2>
-            <p class="text-sm text-slate-500 font-medium">Veuillez vous identifier pour accéder au dashboard.</p>
+            <h2 class="text-2xl font-black text-slate-900 dark:text-white tracking-tight">Bienvenue</h2>
+            <p class="text-sm text-slate-500 dark:text-slate-400 font-medium">Veuillez vous identifier pour accéder au dashboard.</p>
           </div>
           
           <form id="login_form" class="space-y-6">
             <div class="space-y-2">
-              <label class="text-xs font-bold text-slate-700 uppercase tracking-wider">IDENTIFIANT STAFF</label>
+              <label class="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">IDENTIFIANT STAFF</label>
               <div class="relative">
                 <i data-lucide="user" class="w-5 h-5 absolute left-3.5 top-3 text-slate-400"></i>
-                <input type="text" id="login_username" required placeholder="Utilisateur" class="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-indigo-600 transition-colors" />
+                <input type="text" id="login_username" required placeholder="Utilisateur" class="w-full pl-11 pr-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-semibold outline-none text-slate-900 dark:text-white focus:border-indigo-600 dark:focus:border-indigo-500 transition-colors" />
               </div>
             </div>
             <div class="space-y-2">
-              <label class="text-xs font-bold text-slate-700 uppercase tracking-wider">CLÉ D'ACCÈS</label>
+              <label class="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">CLÉ D'ACCÈS</label>
               <div class="relative">
                 <i data-lucide="lock" class="w-5 h-5 absolute left-3.5 top-3 text-slate-400"></i>
-                <input type="password" id="login_password" required placeholder="••••••••" class="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-indigo-600 transition-colors" />
+                <input type="password" id="login_password" required placeholder="••••••••" class="w-full pl-11 pr-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-semibold outline-none text-slate-900 dark:text-white focus:border-indigo-600 dark:focus:border-indigo-500 transition-colors" />
               </div>
             </div>
             
-            <div id="login_error_msg" class="text-xs font-semibold text-rose-600 hidden bg-rose-50 border border-rose-200 p-3 rounded-xl">
+            <div id="login_error_msg" class="text-xs font-semibold text-rose-600 hidden bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50 p-3 rounded-xl">
               Nom d'utilisateur ou mot de passe incorrect.
             </div>
 
-            <button type="submit" class="w-full bg-[#0b101d] hover:bg-slate-800 text-white font-bold py-3.5 px-4 rounded-xl flex items-center justify-center gap-2 transform active:scale-95 transition-all shadow-md">
+            <button type="submit" class="w-full bg-slate-950 hover:bg-slate-800 text-white font-bold py-3.5 px-4 rounded-xl flex items-center justify-center gap-2 transform active:scale-95 transition-all shadow-md">
               <i data-lucide="lock" class="w-4 h-4"></i>
               DÉVERROUILLER LE DASHBOARD
             </button>
@@ -2905,7 +3490,7 @@
          FORCE PASSWORD RESET OVERLAY
          ========================================================================== -->
     <div id="force_reset_overlay" class="fixed inset-0 bg-slate-950 z-[101] flex items-center justify-center p-4 drop-shadow-2xl font-sans hidden">
-      <div class="w-full max-w-sm bg-white dark:bg-[#151d30] border border-slate-200 dark:border-slate-800 rounded-3xl p-6 lg:p-8 shadow-2xl space-y-5 relative">
+      <div class="w-full max-w-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 lg:p-8 shadow-2xl space-y-5 relative">
         <div class="text-center space-y-2">
           <div class="w-12 h-12 bg-amber-500/10 text-amber-500 dark:text-amber-400 rounded-2xl flex items-center justify-center mx-auto border border-amber-500/20 shadow-inner animate-bounce">
             <i data-lucide="shield-alert" class="w-6 h-6"></i>
@@ -2923,7 +3508,7 @@
 
           <div class="space-y-1">
             <label class="text-[10px] font-black uppercase tracking-wider text-slate-400 block font-sans">Confirmer le mot de passe</label>
-            <input type="password" id="reset_password_confirm" required placeholder="Saisir à nouveau..." class="w-full px-4 py-2.5 bg-slate-50 dark:bg-[#0b101d] border border-slate-200 dark:border-slate-800 rounded-xl text-xs sm:text-sm font-semibold outline-none focus:border-indigo-500" />
+            <input type="password" id="reset_password_confirm" required placeholder="Saisir à nouveau..." class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs sm:text-sm font-semibold outline-none focus:border-indigo-500" />
           </div>
 
           <div id="reset_error_msg" class="text-xs font-semibold text-rose-500 dark:text-rose-450 hidden bg-rose-50 dark:bg-rose-950/40 border border-rose-200/50 dark:border-rose-900/40 p-3 rounded-xl font-sans">
@@ -2941,7 +3526,7 @@
          MODAL : AJOUT/MODIFICATION UTILISATEUR
          ========================================================================== -->
     <div id="userCrudModal" class="fixed inset-0 z-50 items-center justify-center p-4 bg-slate-900/65 backdrop-blur-sm hidden animate-fade-in font-sans" style="display: none;">
-      <div class="bg-white dark:bg-[#151d30] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl max-w-md w-full p-6 space-y-4">
+      <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl max-w-md w-full p-6 space-y-4">
         <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
           <h2 id="userCrudModalTitle" class="text-sm font-black tracking-tight text-slate-900 dark:text-white uppercase">Créer un Nouvel Utilisateur</h2>
           <button type="button" id="btn_close_crud_modal" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1.5 hover:bg-slate-50 dark:hover:bg-slate-800/80 rounded-lg transition-colors cursor-pointer">
@@ -3004,10 +3589,10 @@
     <script type="module" src="/app.js"></script>
 
      <!-- Mobile Bottom Navigation Bar -->
-    <nav class="lg:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-[#151d30] border-t border-slate-200 dark:border-slate-800 flex justify-between z-50 h-13 py-1 px-0.5 items-center overflow-hidden">
+    <nav class="lg:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 flex justify-between z-50 h-13 py-1 px-0.5 items-center overflow-hidden">
       <button data-view="dashboard" class="mobile-nav-btn flex flex-col items-center py-1 flex-1 min-w-0 text-slate-500 hover:text-indigo-600 transition-colors border-t-2 border-transparent">
         <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
-        <span class="text-[8px] font-bold mt-0.5 truncate max-w-full block leading-none text-center">Dashboard</span>
+        <span class="text-[8px] font-bold mt-0.5 truncate max-w-full block leading-none text-center">Statistiques</span>
       </button>
       <button data-view="planner" class="mobile-nav-btn flex flex-col items-center py-1 flex-1 min-w-0 text-slate-500 hover:text-indigo-600 transition-colors border-t-2 border-transparent">
         <i data-lucide="route" class="w-4 h-4"></i>
@@ -3017,10 +3602,11 @@
         <i data-lucide="calendar" class="w-4 h-4"></i>
         <span class="text-[8px] font-bold mt-0.5 truncate max-w-full block leading-none text-center">Missions</span>
       </button>
-      <button data-view="stats" class="mobile-nav-btn flex flex-col items-center py-1 flex-1 min-w-0 text-slate-500 hover:text-indigo-600 transition-colors border-t-2 border-transparent">
-        <i data-lucide="trending-up" class="w-4 h-4"></i>
-        <span class="text-[8px] font-bold mt-0.5 truncate max-w-full block leading-none text-center">Stats</span>
+      <button data-view="inspection" class="mobile-nav-btn flex flex-col items-center py-1 flex-1 min-w-0 text-slate-500 hover:text-indigo-600 transition-colors border-t-2 border-transparent">
+        <i data-lucide="clipboard-check" class="w-4 h-4"></i>
+        <span class="text-[8px] font-bold mt-0.5 truncate max-w-full block leading-none text-center">État Lieux</span>
       </button>
+
       <button data-view="settings" class="mobile-nav-btn flex flex-col items-center py-1 flex-1 min-w-0 text-slate-500 hover:text-indigo-600 transition-colors border-t-2 border-transparent">
         <i data-lucide="sliders-horizontal" class="w-4 h-4"></i>
         <span class="text-[8px] font-bold mt-0.5 truncate max-w-full block leading-none text-center">Réglages</span>
@@ -3033,7 +3619,7 @@
 
     <!-- Modal de sélection des colonnes pour l'export PDF -->
     <div id="pdfExportModal" class="fixed inset-0 z-[60] items-center justify-center p-4 bg-slate-900/65 backdrop-blur-sm hidden animate-fade-in font-sans">
-      <div class="w-full max-w-sm bg-white dark:bg-[#151d30] border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-2xl space-y-4">
+      <div class="w-full max-w-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-2xl space-y-4">
         <h3 class="text-lg font-black text-slate-900 dark:text-white">Colonnes à Imprimer</h3>
         <p class="text-xs text-slate-500 dark:text-slate-400">Sélectionnez les colonnes à inclure dans le PDF.</p>
         <div id="pdfColumnSelection" class="grid grid-cols-2 gap-2 text-xs font-semibold text-slate-700 dark:text-slate-300">

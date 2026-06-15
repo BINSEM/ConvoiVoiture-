@@ -91,23 +91,22 @@ export const StorageService = {
   },
 
   /**
-   * Enregistre la préférence de thème (dark/light)
-   * @param {string} theme - 'dark' ou 'light'
+   * Enregistre la préférence de thème (system/dark/light)
+   * @param {string} theme - 'system', 'dark' ou 'light'
    */
   saveTheme(theme) {
     localStorage.setItem(STORAGE_KEYS.THEME, theme);
   },
 
   /**
-   * Récupère la préférence du thème
+   * Récupère la préférence du thème (system/dark/light) ou retourne 'system' par défaut
    */
   getTheme() {
     const saved = localStorage.getItem(STORAGE_KEYS.THEME);
     if (saved) {
       return saved;
     }
-    const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-    return prefersDark ? 'dark' : 'light';
+    return 'system';
   },
 
   /**

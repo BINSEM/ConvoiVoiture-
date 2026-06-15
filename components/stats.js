@@ -550,7 +550,7 @@ export const StatsService = {
                   'rgba(22, 163, 74, 0.8)', // Vert
                   'rgba(220, 38, 38, 0.8)'  // Rouge
                 ],
-                borderColor: isDarkMode ? '#111827' : '#ffffff',
+                borderColor: isDarkMode ? '#0f172a' : '#ffffff',
                 borderWidth: 2
               }]
             },
@@ -666,7 +666,7 @@ export const StatsService = {
                 ],
                 borderRadius: 4,
                 borderWidth: 1,
-                borderColor: isDarkMode ? '#111827' : '#ffffff'
+                borderColor: isDarkMode ? '#0f172a' : '#ffffff'
               }]
             },
             options: {
@@ -713,7 +713,7 @@ export const StatsService = {
                 ],
                 hoverOffset: 6,
                 borderWidth: isDarkMode ? 2 : 1,
-                borderColor: isDarkMode ? '#111827' : '#ffffff'
+                borderColor: isDarkMode ? '#0f172a' : '#ffffff'
               }]
             },
             options: {

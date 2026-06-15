@@ -304,7 +304,7 @@ export const TableService = {
     // 4. Dessiner sur ÉCRAN MOBILE (Cards-view Super Compacte pour le Convoyeur)
     if (paginatedItems.length === 0) {
       mobileContainer.innerHTML = `
-        <div class="p-8 text-center bg-white dark:bg-[#151d30] rounded-xl border border-slate-100 dark:border-slate-850">
+        <div class="p-8 text-center bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-850">
           <p class="text-sm text-gray-400">Aucune mission trouvée pour vos filtres actifs.</p>
         </div>
       `;
@@ -357,7 +357,7 @@ export const TableService = {
         }
 
         return `
-          <div class="bg-white dark:bg-[#151d30] p-3 rounded-xl border border-slate-150 dark:border-slate-800 shadow-sm relative overflow-hidden flex flex-col space-y-2">
+          <div class="bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-150 dark:border-slate-800 shadow-sm relative overflow-hidden flex flex-col space-y-2">
             <!-- Fine bande latérale d'intensité Rentabilité -->
             <div class="absolute left-0 top-0 bottom-0 w-1 ${rentabilityKm >= 0.4 ? 'bg-emerald-500' : rentabilityKm >= 0.15 ? 'bg-indigo-500' : 'bg-rose-500'}"></div>
             
@@ -512,7 +512,7 @@ export const TableService = {
     } else if (s === 'en attente') {
       statusLine = `<span class="px-2.5 py-1 rounded bg-amber-100 text-amber-850 border border-amber-200 text-xs font-bold font-sans">⏳ En Attente de Justificatif</span>`;
     } else {
-      statusLine = `<span class="px-2.5 py-1 rounded bg-slate-100 text-slate-800 border border-slate-200 text-xs font-bold font-sans">✕ Annulée</span>`;
+      statusLine = `<span class="px-2.5 py-1 rounded bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700 text-xs font-bold font-sans">✕ Annulée</span>`;
     }
 
     content.innerHTML = `
