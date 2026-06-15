@@ -225,9 +225,11 @@ export const TableService = {
                 <button data-action="documents" data-id="${m.id}" title="Documents" class="p-1 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded transition-colors cursor-pointer">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9,12h6m-6,4h6m2,5H7a2,2,0,0,1,-2,-2V5a2,2,0,0,1,2,-2h5.586a1,1,0,0,1,0.707,0.293l5.414,5.414a1,1,0,0,1,0.293,0.707V19a2,2,0,0,1,-2,2z"/></svg>
                 </button>
+                ${window.app?.currentUser?.role !== 'ACCOUNTANT' ? `
                 <button data-action="inspect" data-id="${m.id}" title="État des lieux" class="p-1 text-sky-600 hover:bg-sky-50 dark:hover:bg-sky-950/40 rounded transition-colors cursor-pointer">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                 </button>
+                ` : ''}
                 ${!isReadOnly ? `
                   <button data-action="edit" data-id="${m.id}" title="Modifier" class="p-1 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/40 rounded transition-colors cursor-pointer">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
@@ -436,10 +438,12 @@ export const TableService = {
                 <span class="text-[9px] font-black uppercase">Docs</span>
               </button>
 
+              ${window.app?.currentUser?.role !== 'ACCOUNTANT' ? `
               <button data-action="inspect" data-id="${m.id}" title="Photos" class="flex flex-col items-center justify-center gap-1 p-1.5 rounded-xl bg-sky-50/50 dark:bg-sky-950/30 text-sky-700 dark:text-sky-300 border border-sky-100/20 dark:border-sky-900/10 transition-all active:scale-95 cursor-pointer">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                 <span class="text-[9px] font-black uppercase">Photos</span>
               </button>
+              ` : ''}
 
               ${!isReadOnly && (s !== 'payée' && s !== 'terminée' && s !== 'terminee') ? `
                 <button data-action="validate" data-id="${m.id}" title="Valider" class="flex flex-col items-center justify-center gap-1 p-1.5 rounded-xl bg-emerald-50/50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 border border-emerald-100/20 dark:border-emerald-900/10 transition-all active:scale-95 cursor-pointer">
@@ -629,10 +633,12 @@ export const TableService = {
             <span class="text-[9px] font-black uppercase">Docs</span>
           </button>
           
+          ${window.app?.currentUser?.role !== 'ACCOUNTANT' ? `
           <button data-action="inspect" data-id="${m.id}" title="Inspection" class="flex flex-col items-center justify-center gap-1 p-2 rounded-xl bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300 border border-sky-100 dark:border-sky-900/40 transition-all active:scale-95 cursor-pointer">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
             <span class="text-[9px] font-black uppercase">Photos</span>
           </button>
+          ` : ''}
 
           ${!this.isReadOnly && (s !== 'payée' && s !== 'terminée' && s !== 'terminee') ? `
             <button data-action="validate" data-id="${m.id}" title="Valider" class="flex flex-col items-center justify-center gap-1 p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-100 dark:border-emerald-900/40 transition-all active:scale-95 cursor-pointer">

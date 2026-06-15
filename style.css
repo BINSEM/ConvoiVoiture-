@@ -561,13 +561,17 @@ body.is-accountant [data-action="duplicate"],
 body.is-accountant [data-action="edit"],
 body.is-accountant [data-action="delete"],
 body.is-accountant [data-action="validate"],
+body.is-accountant [data-action="inspect"],
 body.is-accountant #btn_hero_add_mission,
 body.is-accountant #btn_dashboard_add_mission,
 body.is-accountant #btn_add_mission,
+body.is-accountant #btn_import_excel,
+body.is-accountant #btn_mission_action_etat_lieux,
 body.is-accountant #btn_quick_add,
 body.is-accountant .admin-only-content,
 body.is-accountant #smart_dispatch_controls,
-body.is-accountant #planner_section_root {
+body.is-accountant #planner_section_root,
+body.is-accountant [data-view="inspection"] {
   display: none !important;
 }
 

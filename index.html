@@ -1034,7 +1034,7 @@
               </div>
               <div class="flex flex-col xs:flex-row flex-wrap items-stretch xs:items-center gap-2 w-full sm:w-auto">
                 <input type="file" id="input_import_excel" accept=".xlsx, .xls" class="hidden" />
-                <button onclick="window.app.switchView('inspection')" class="xs:flex-1 sm:flex-none px-4 py-2.5 bg-sky-600/10 text-sky-700 hover:bg-sky-600/20 dark:bg-sky-550/10 dark:text-sky-400 dark:hover:bg-sky-500/20 rounded-xl flex items-center justify-center gap-1.5 font-bold active:scale-95 transition-all cursor-pointer text-xs sm:text-sm">
+                <button id="btn_mission_action_etat_lieux" onclick="window.app.switchView('inspection')" class="xs:flex-1 sm:flex-none px-4 py-2.5 bg-sky-600/10 text-sky-700 hover:bg-sky-600/20 dark:bg-sky-550/10 dark:text-sky-400 dark:hover:bg-sky-500/20 rounded-xl flex items-center justify-center gap-1.5 font-bold active:scale-95 transition-all cursor-pointer text-xs sm:text-sm">
                   <i data-lucide="clipboard-check" class="w-4 h-4"></i> État des Lieux
                 </button>
                 <button id="btn_add_mission" class="xs:flex-1 sm:flex-none bg-blue-600 text-white hover:bg-blue-700 px-4 py-2.5 rounded-xl flex items-center justify-center gap-1.5 font-bold shadow-md shadow-blue-500/10 active:scale-95 transition-all text-xs sm:text-sm">
@@ -3427,27 +3427,43 @@
     <!-- ==========================================================================
          AFFICHER L'OVERLAY DE CONNEXION SÉCURISÉE (RBAC)
          ========================================================================== -->
-    <div id="login_overlay" class="fixed inset-0 bg-white dark:bg-slate-950 z-[100] flex flex-row font-sans overflow-hidden w-screen h-screen" style="display: flex;">
-      <!-- Left: Branded Panel (Hidden on mobile) -->
-      <div class="hidden lg:flex w-1/2 bg-slate-950 items-center justify-center p-12 relative overflow-hidden">
-        <div class="absolute inset-0 bg-gradient-to-br from-blue-900/40 to-transparent"></div>
-        <div class="relative text-center space-y-6">
-          <div class="w-24 h-24 bg-white/10 rounded-3xl flex items-center justify-center mx-auto border border-white/20 shadow-xl backdrop-blur-sm">
-            <i data-lucide="zap" class="w-12 h-12 text-white"></i>
-          </div>
-          <div class="space-y-2">
-            <h1 class="text-4xl font-black tracking-tight text-white">CONVOY PRO</h1>
-            <p class="text-lg text-blue-200/90 font-medium tracking-wide">ADVANCED FLEET INTELLIGENCE</p>
-          </div>
+    <div id="login_overlay" class="fixed inset-0 bg-slate-900 z-[100] flex flex-col lg:flex-row font-sans overflow-hidden w-screen h-screen" style="display: flex;">
+      <!-- Background Image Layer (Covers everything) -->
+      <div class="absolute inset-0 z-0">
+        <img src="/login-bg.jpg" alt="Logistics Background" class="absolute inset-0 w-full h-full object-cover object-center lg:object-[center_right] opacity-70" />
+        <!-- Subtle gradient overlay to ensure text readability -->
+        <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/60 to-slate-900/20 mix-blend-multiply"></div>
+        <div class="absolute inset-0 bg-slate-900/30"></div>
+      </div>
+
+      <!-- Left: Decorative / Brand Panel (Visible on Desktop) -->
+      <!-- Added pointer events none to let user click things if needed, though this is just decorative layout space -->
+      <div class="hidden lg:flex flex-1 w-full items-center justify-center p-12 relative z-10 pointer-events-none">
+        
+        <!-- Logo Decal perfectly anchored to the background image coordinate space -->
+        <!-- Placed over the side of the truck in the background -->
+        <div class="absolute inset-0 flex items-center justify-center opacity-90 drop-shadow-sm mix-blend-multiply pb-10 pr-20 md:pr-40 xl:pr-60 hidden lg:flex scale-75 xl:scale-100">
+          <svg viewBox="0 0 500 200" width="400" height="150" class="overflow-visible skew-y-1 -rotate-1 transform">
+             <text x="0" y="100" style="font-family: 'Times New Roman', serif; font-size: 150px; fill: #1e293b; font-weight: bold;">S</text>
+             <text x="70" y="100" style="font-family: 'Times New Roman', serif; font-size: 150px; fill: #1e293b; font-weight: bold;">E</text>
+             <rect x="180" y="-10" width="6" height="120" fill="#1e293b" />
+             <text x="210" y="80" style="font-family: 'Inter', system-ui, sans-serif; font-size: 80px; font-weight: 900; letter-spacing: -2px; fill: #1e293b;">Logistique</text>
+          </svg>
         </div>
       </div>
-      
+
       <!-- Right: Login Form -->
-      <div class="w-full lg:w-1/2 bg-white dark:bg-slate-950 flex items-center justify-center p-8">
-        <div class="w-full max-w-sm space-y-8">
-          <div class="space-y-2">
-            <h2 class="text-2xl font-black text-slate-900 dark:text-white tracking-tight">Bienvenue</h2>
-            <p class="text-sm text-slate-500 dark:text-slate-400 font-medium">Veuillez vous identifier pour accéder au dashboard.</p>
+      <div class="w-full lg:w-[500px] xl:w-[600px] flex items-center justify-center p-6 z-10 lg:bg-slate-950/40 lg:backdrop-blur-sm self-stretch shrink-0">
+        <div class="w-full max-w-sm xl:max-w-md space-y-8 bg-white/95 dark:bg-slate-950/95 backdrop-blur-2xl p-8 sm:p-10 rounded-3xl shadow-2xl shadow-black/50 border border-white/20 dark:border-slate-800/80 mt-10 lg:mt-0">
+          <div class="space-y-3 text-center">
+            <!-- Mobile Brand Icon -->
+            <div class="w-16 h-16 bg-slate-900 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-slate-700 shadow-xl overflow-hidden relative lg:hidden">
+              <span class="text-white font-serif font-bold text-2xl relative z-10 translate-x-[-4px] translate-y-[2px]">S</span>
+              <span class="text-white font-serif font-bold text-2xl relative z-10 translate-x-[0px] translate-y-[-2px]">E</span>
+              <div class="absolute inset-x-0 bottom-0 h-1/2 bg-blue-600/20"></div>
+            </div>
+            <h2 class="text-3xl font-black text-slate-900 dark:text-white tracking-tight">Bienvenue</h2>
+            <p class="text-sm text-slate-500 dark:text-slate-400 font-medium">Veuillez vous identifier pour accéder au système.</p>
           </div>
           
           <form id="login_form" class="space-y-6">
