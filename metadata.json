@@ -1,0 +1,6 @@
+{
+  "name": "Convoyeur Professionnel",
+  "description": "Gestionnaire de convoyage avec synchronisation Google Drive.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
