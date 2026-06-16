@@ -20,6 +20,8 @@ export const InspectionService = {
   departTime: '',
   dashPhotoDep: null,
   dashPhotoArr: null,
+  depositReceiptPhoto: null,
+  contractPhoto: null,
 
   // Arrivée details
   arriveeKm: '',
@@ -161,6 +163,8 @@ export const InspectionService = {
 
     this.dashPhotoDep = null;
     this.dashPhotoArr = null;
+    this.depositReceiptPhoto = null;
+    this.contractPhoto = null;
 
     // Reset arrival inputs in HTML if they exist
     const kmArrEl = document.getElementById('ins_arrivee_km');
@@ -190,6 +194,22 @@ export const InspectionService = {
       previewArr.classList.add('hidden');
     }
     if (placeholderArr) placeholderArr.classList.remove('hidden');
+
+    const previewDeposit = document.getElementById('ins_preview_deposit_receipt');
+    const placeholderDeposit = document.getElementById('ins_placeholder_deposit_receipt');
+    if (previewDeposit) {
+      previewDeposit.src = '';
+      previewDeposit.classList.add('hidden');
+    }
+    if (placeholderDeposit) placeholderDeposit.classList.remove('hidden');
+
+    const previewContract = document.getElementById('ins_preview_contract_photo');
+    const placeholderContract = document.getElementById('ins_placeholder_contract_photo');
+    if (previewContract) {
+      previewContract.src = '';
+      previewContract.classList.add('hidden');
+    }
+    if (placeholderContract) placeholderContract.classList.remove('hidden');
 
     // Set input elements in HTML
     const refEl = document.getElementById('ins_depart_ref');
@@ -256,8 +276,19 @@ export const InspectionService = {
       report += `Client de livraison: ${mission.inspection.client || 'Non spécifié'}\n`;
       report += `Kilométrage de départ: ${mission.inspection.kmDepart ? (mission.inspection.kmDepart + ' km') : 'Non spécifié'}\n`;
       report += `Niveau jauge carburant: ${mission.inspection.carburant || 'Non spécifié'}\n`;
-      const dateDepStr = mission.inspection.dateDepart ? new Date(mission.inspection.dateDepart).toLocaleDateString('fr-FR') : 'Non spécifie';
-      report += `Départ prévu le: ${dateDepStr} à ${mission.inspection.heureDepart || 'Non spécifié'}\n\n`;
+      const dateDepStr = mission.inspection.dateDepart ? new Date(mission.inspection.dateDepart).toLocaleDateString('fr-FR') : 'Non spécifié';
+      report += `Départ prévu le: ${dateDepStr} à ${mission.inspection.heureDepart || 'Non spécifié'}\n`;
+      if (mission.inspection.depositReceiptPhoto) {
+        report += `✓ Reçu de caution de garantie : Photo du reçu enregistrée\n`;
+      } else {
+        report += `Reçu de caution de garantie : Aucun reçu de caution fourni\n`;
+      }
+      if (mission.inspection.contractPhoto) {
+        report += `✓ Photo du contrat de convoyage : Enregistrée\n`;
+      } else {
+        report += `Photo du contrat de convoyage : Aucun contrat fourni\n`;
+      }
+      report += `\n`;
       
       const dList = mission.inspection.damages || [];
       report += `Détails des anomalies et dommages signalés (${dList.length}) :\n`;
@@ -296,6 +327,12 @@ export const InspectionService = {
     if (mission.inspection && mission.inspection.dashboardArriveePhoto) {
       allPhotos.push(mission.inspection.dashboardArriveePhoto);
     }
+    if (mission.inspection && mission.inspection.depositReceiptPhoto) {
+      allPhotos.push(mission.inspection.depositReceiptPhoto);
+    }
+    if (mission.inspection && mission.inspection.contractPhoto) {
+      allPhotos.push(mission.inspection.contractPhoto);
+    }
 
     if (allPhotos.length > 0) {
       allPhotos.forEach((url, i) => {
@@ -306,6 +343,8 @@ export const InspectionService = {
         if (mission.inspection) {
           if (url === mission.inspection.dashboardDepartPhoto) label = "TDB Départ";
           if (url === mission.inspection.dashboardArriveePhoto) label = "TDB Arrivée";
+          if (url === mission.inspection.depositReceiptPhoto) label = "Reçu Caution";
+          if (url === mission.inspection.contractPhoto) label = "Contrat";
         }
 
         imgDiv.innerHTML = `
@@ -729,6 +768,32 @@ export const InspectionService = {
           if (window.DashboardService) {
             window.DashboardService.showNotification("Photo de tableau de bord (Départ) enregistrée !", "success");
           }
+        } else if (this.activeCameraTarget === 'deposit_receipt') {
+          this.depositReceiptPhoto = dataUrl;
+          const previewDeposit = document.getElementById('ins_preview_deposit_receipt');
+          const placeholderDeposit = document.getElementById('ins_placeholder_deposit_receipt');
+          if (previewDeposit) {
+            previewDeposit.src = dataUrl;
+            previewDeposit.classList.remove('hidden');
+          }
+          if (placeholderDeposit) placeholderDeposit.classList.add('hidden');
+          
+          if (window.DashboardService) {
+            window.DashboardService.showNotification("Photo du reçu de la caution enregistrée !", "success");
+          }
+        } else if (this.activeCameraTarget === 'contract') {
+          this.contractPhoto = dataUrl;
+          const previewContract = document.getElementById('ins_preview_contract_photo');
+          const placeholderContract = document.getElementById('ins_placeholder_contract_photo');
+          if (previewContract) {
+            previewContract.src = dataUrl;
+            previewContract.classList.remove('hidden');
+          }
+          if (placeholderContract) placeholderContract.classList.add('hidden');
+          
+          if (window.DashboardService) {
+            window.DashboardService.showNotification("Photo du contrat de convoyage enregistrée !", "success");
+          }
         } else if (this.activeCameraTarget === 'dash_arr') {
           this.dashPhotoArr = dataUrl;
           const previewArr = document.getElementById('ins_preview_dash_arr');
@@ -995,6 +1060,24 @@ export const InspectionService = {
           previewDep.classList.remove('hidden');
         }
         if (placeholderDep) placeholderDep.classList.add('hidden');
+      } else if (type === 'deposit_receipt') {
+        this.depositReceiptPhoto = dataUrl;
+        const previewDeposit = document.getElementById('ins_preview_deposit_receipt');
+        const placeholderDeposit = document.getElementById('ins_placeholder_deposit_receipt');
+        if (previewDeposit) {
+          previewDeposit.src = dataUrl;
+          previewDeposit.classList.remove('hidden');
+        }
+        if (placeholderDeposit) placeholderDeposit.classList.add('hidden');
+      } else if (type === 'contract') {
+        this.contractPhoto = dataUrl;
+        const previewContract = document.getElementById('ins_preview_contract_photo');
+        const placeholderContract = document.getElementById('ins_placeholder_contract_photo');
+        if (previewContract) {
+          previewContract.src = dataUrl;
+          previewContract.classList.remove('hidden');
+        }
+        if (placeholderContract) placeholderContract.classList.add('hidden');
       } else {
         this.dashPhotoArr = dataUrl;
         const previewArr = document.getElementById('ins_preview_dash_arr');
@@ -1007,7 +1090,11 @@ export const InspectionService = {
       }
 
       if (window.DashboardService) {
-        window.DashboardService.showNotification(`Photo de tableau de bord (${type === 'dep' ? 'Départ' : 'Arrivée'}) enregistrée avec horodatage !`, "success");
+        let label = "tableau de bord (Départ)";
+        if (type === 'arr') label = "tableau de bord (Arrivée)";
+        if (type === 'deposit_receipt') label = "reçu de caution";
+        if (type === 'contract') label = "contrat de convoyage";
+        window.DashboardService.showNotification(`Photo de ${label} enregistrée avec horodatage !`, "success");
       }
     };
     reader.readAsDataURL(file);
@@ -1123,6 +1210,24 @@ export const InspectionService = {
     }
   },
 
+  viewDepositPhoto() {
+    const url = this.depositReceiptPhoto;
+    if (url) {
+      this.openLightbox(url);
+    } else {
+      this.askPhotoSource('deposit_receipt');
+    }
+  },
+
+  viewContractPhoto() {
+    const url = this.contractPhoto;
+    if (url) {
+      this.openLightbox(url);
+    } else {
+      this.askPhotoSource('contract');
+    }
+  },
+
   goToSummary() {
     this.showStep('summary');
     this.renderSummary();
@@ -1187,6 +1292,16 @@ export const InspectionService = {
     
     if (this.activeCameraTarget === 'dash_dep') {
       this.handleDashPhoto(evt.target, 'dep');
+      evt.target.value = '';
+      return;
+    }
+    if (this.activeCameraTarget === 'deposit_receipt') {
+      this.handleDashPhoto(evt.target, 'deposit_receipt');
+      evt.target.value = '';
+      return;
+    }
+    if (this.activeCameraTarget === 'contract') {
+      this.handleDashPhoto(evt.target, 'contract');
       evt.target.value = '';
       return;
     }
@@ -1694,6 +1809,16 @@ export const InspectionService = {
         reportContent += `Niveau jauge carburant (Départ): ${mission.inspection.carburant || 'Non spécifié'}\n`;
         const dStr = mission.inspection.dateDepart ? new Date(mission.inspection.dateDepart).toLocaleDateString('fr-FR') : 'Non spécifié';
         reportContent += `Départ prévu le: ${dStr} à ${mission.inspection.heureDepart || 'Non spécifié'}\n`;
+        if (mission.inspection.depositReceiptPhoto) {
+          reportContent += `✓ Reçu de caution de garantie : Photo du reçu enregistrée\n`;
+        } else {
+          reportContent += `✗ Reçu de caution de garantie : Aucun reçu fourni\n`;
+        }
+        if (mission.inspection.contractPhoto) {
+          reportContent += `✓ Photo du contrat de convoyage : Enregistrée\n`;
+        } else {
+          reportContent += `✗ Photo du contrat de convoyage : Non fournie\n`;
+        }
 
         reportContent += `\nÉTAT D'ARRIVÉE À DESTINATION FINALE :\n`;
         reportContent += `---------------------------------------\n`;
@@ -1813,12 +1938,14 @@ export const InspectionService = {
         }
       }
 
-      // 3. Upload dashboard photos if they exist
-      const tdbPhotos = [
+      // 3. Upload dashboard and deposit receipt photos if they exist
+      const extraPhotos = [
         { url: mission.inspection?.dashboardDepartPhoto, prefix: 'TDB_Depart' },
-        { url: mission.inspection?.dashboardArriveePhoto, prefix: 'TDB_Arrivee' }
+        { url: mission.inspection?.dashboardArriveePhoto, prefix: 'TDB_Arrivee' },
+        { url: mission.inspection?.depositReceiptPhoto, prefix: 'Recu_Caution' },
+        { url: mission.inspection?.contractPhoto, prefix: 'Contrat_Convoyage' }
       ];
-      for (const tdb of tdbPhotos) {
+      for (const tdb of extraPhotos) {
         if (tdb.url) {
           try {
             let blob;
@@ -1956,6 +2083,8 @@ export const InspectionService = {
         heureDepart: this.departTime,
         dashboardDepartPhoto: this.dashPhotoDep,
         dashboardArriveePhoto: this.dashPhotoArr,
+        depositReceiptPhoto: this.depositReceiptPhoto,
+        contractPhoto: this.contractPhoto,
         // Active signoff & Driver validation
         signature: this.signatureData,
         confirmedOperative: true,

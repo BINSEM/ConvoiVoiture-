@@ -676,7 +676,7 @@ export const PlannerService = {
     const container = document.querySelector(mapContainerId);
     if (!container || !window.d3) return;
 
-    // Clear previous map (and button if it was added)
+    // Clear previous map (and buttons if added)
     d3.select(mapContainerId).selectAll('svg').remove();
     d3.select(mapContainerId).selectAll('.map-reset-btn').remove();
 
@@ -684,22 +684,73 @@ export const PlannerService = {
     const height = container.clientHeight;
     if (width === 0 || height === 0) return;
 
-    // Add Reset Button
-    const resetButton = document.createElement('button');
-    resetButton.innerHTML = `<i data-lucide="refresh-cw" class="w-4 h-4 text-slate-500"></i>`;
-    resetButton.className = "map-reset-btn absolute top-3 right-3 z-30 p-2 bg-white/90 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 rounded-lg shadow-sm hover:bg-slate-100 dark:hover:bg-slate-700 transition cursor-pointer backdrop-blur-sm";
-    resetButton.onclick = () => {
-      if (this.currentMapZoom && this.currentMapContainerGroup) {
-        d3.select(container).select('svg').transition().duration(500).call(this.currentMapZoom.transform, d3.zoomIdentity);
-      }
+    // Add Premium glassmorphic navigation control panel
+    const controlsContainer = document.createElement('div');
+    controlsContainer.className = "map-reset-btn absolute top-3 right-3 z-30 flex flex-col bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200 dark:border-slate-800 p-1 rounded-xl shadow-lg shadow-slate-900/5 dark:shadow-slate-950/20 divide-y divide-slate-100 dark:divide-slate-800";
+    
+    const createBtn = (html, title, cb) => {
+      const b = document.createElement('button');
+      b.innerHTML = html;
+      b.title = title;
+      b.className = "p-2 hover:bg-slate-50 dark:hover:bg-slate-850 text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 transition cursor-pointer flex items-center justify-center first:rounded-t-lg last:rounded-b-lg";
+      b.onclick = cb;
+      return b;
     };
-    container.appendChild(resetButton);
+
+    const zoomInBtn = createBtn(`<i data-lucide="zoom-in" class="w-4 h-4"></i>`, "Zoomer (+)", () => {
+      if (this.currentMapZoom) {
+        d3.select(container).select('svg').transition().duration(250).call(this.currentMapZoom.scaleBy, 1.4);
+      }
+    });
+
+    const zoomOutBtn = createBtn(`<i data-lucide="zoom-out" class="w-4 h-4"></i>`, "Dézoomer (-)", () => {
+      if (this.currentMapZoom) {
+        d3.select(container).select('svg').transition().duration(250).call(this.currentMapZoom.scaleBy, 1 / 1.4);
+      }
+    });
+
+    const resetBtn = createBtn(`<i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>`, "Centrer la carte", () => {
+      if (this.currentMapZoom) {
+         d3.select(container).select('svg').transition().duration(500).call(this.currentMapZoom.transform, d3.zoomIdentity);
+      }
+    });
+
+    controlsContainer.appendChild(zoomInBtn);
+    controlsContainer.appendChild(zoomOutBtn);
+    controlsContainer.appendChild(resetBtn);
+    container.appendChild(controlsContainer);
     if (window.lucide) window.lucide.createIcons();
 
     const svg = d3.select(mapContainerId)
       .append('svg')
       .attr('width', width)
       .attr('height', height);
+
+    // Setup CSS styles block inside the SVG for seamless hardware-accelerated animations
+    svg.append('style').text(`
+      @keyframes d3-route-flow-anim {
+        from { stroke-dashoffset: 24; }
+        to { stroke-dashoffset: 0; }
+      }
+      .d3-route-flow-active {
+        stroke-dasharray: 6px, 6px;
+        animation: d3-route-flow-anim 1.2s linear infinite;
+      }
+      @keyframes d3-city-ripple-anim {
+        0% { r: 5px; opacity: 1; }
+        100% { r: 18px; opacity: 0; }
+      }
+      .d3-ripple-ping {
+        animation: d3-city-ripple-anim 2.2s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+        pointer-events: none;
+      }
+      .d3-route-halo {
+        filter: drop-shadow(0 0 3px rgba(129, 140, 248, 0.4));
+      }
+      .d3-route-active-halo {
+        filter: drop-shadow(0 0 5px rgba(16, 185, 129, 0.45));
+      }
+    `);
 
     // Setup tooltip
     let tooltip = d3.select('body').select('.d3-segment-tooltip');
@@ -734,7 +785,7 @@ export const PlannerService = {
         const projection = d3.geoMercator().fitExtent([[40, 40], [width - 40, height - 40]], franceGeo);
         const pathGenerator = d3.geoPath().projection(projection);
 
-        // 1a. Draw Spain map
+        // 1a. Draw Spain map (dimmed backdrop of France)
         if (spainGeo) {
           const spainGroup = this.currentMapContainerGroup.append('g').attr('class', 'spain-map');
           spainGroup.selectAll('path')
@@ -742,17 +793,17 @@ export const PlannerService = {
             .enter()
             .append('path')
             .attr('d', pathGenerator)
-            .attr('fill', isDarkMode ? '#111827' : '#f8fafc')
-            .attr('stroke', isDarkMode ? '#1f2937' : '#e2e8f0') 
-            .attr('stroke-width', isDarkMode ? 1.0 : 0.8)
-            .attr('opacity', 0.8)
+            .attr('fill', isDarkMode ? '#090f19' : '#fdfdfd')
+            .attr('stroke', isDarkMode ? '#131e33' : '#f1f5f9') 
+            .attr('stroke-width', isDarkMode ? 0.9 : 0.7)
+            .attr('opacity', isDarkMode ? 0.45 : 0.6)
             .attr('style', 'cursor: default; transition: fill 0.3s, stroke 0.3s, opacity 0.3s;')
             .on('mouseover', function(event, d) {
                d3.select(this)
-                 .attr('fill', isDarkMode ? '#1e293b' : '#f1f5f9')
-                 .attr('stroke', isDarkMode ? '#38bdf8' : '#6366f1')
-                 .attr('stroke-width', isDarkMode ? 1.4 : 1.1)
-                 .attr('opacity', 1.0);
+                 .attr('fill', isDarkMode ? '#121e33' : '#f8fafc')
+                 .attr('stroke', isDarkMode ? '#38bdf8' : '#818cf8')
+                 .attr('stroke-width', isDarkMode ? 1.2 : 0.9)
+                 .attr('opacity', 0.85);
                
                const regionName = d.properties?.name || d.properties?.nom || "Espagne";
                tooltip.transition().duration(100).style('opacity', 1);
@@ -765,15 +816,15 @@ export const PlannerService = {
             })
             .on('mouseleave', function() {
                d3.select(this)
-                 .attr('fill', isDarkMode ? '#111827' : '#f8fafc')
-                 .attr('stroke', isDarkMode ? '#1f2937' : '#e2e8f0')
-                 .attr('stroke-width', isDarkMode ? 1.0 : 0.8)
-                 .attr('opacity', 0.8);
+                 .attr('fill', isDarkMode ? '#090f19' : '#fdfdfd')
+                 .attr('stroke', isDarkMode ? '#131e33' : '#f1f5f9')
+                 .attr('stroke-width', isDarkMode ? 0.9 : 0.7)
+                 .attr('opacity', isDarkMode ? 0.45 : 0.6);
                tooltip.transition().duration(200).style('opacity', 0);
             });
         }
 
-        // 1b. Draw Germany map
+        // 1b. Draw Germany map (dimmed backdrop of France)
         if (germanyGeo) {
           const germanyGroup = this.currentMapContainerGroup.append('g').attr('class', 'germany-map');
           germanyGroup.selectAll('path')
@@ -781,17 +832,17 @@ export const PlannerService = {
             .enter()
             .append('path')
             .attr('d', pathGenerator)
-            .attr('fill', isDarkMode ? '#111827' : '#f8fafc')
-            .attr('stroke', isDarkMode ? '#1f2937' : '#e2e8f0') 
-            .attr('stroke-width', isDarkMode ? 1.0 : 0.8)
-            .attr('opacity', 0.8)
+            .attr('fill', isDarkMode ? '#090f19' : '#fdfdfd')
+            .attr('stroke', isDarkMode ? '#131e33' : '#f1f5f9') 
+            .attr('stroke-width', isDarkMode ? 0.9 : 0.7)
+            .attr('opacity', isDarkMode ? 0.45 : 0.6)
             .attr('style', 'cursor: default; transition: fill 0.3s, stroke 0.3s, opacity 0.3s;')
             .on('mouseover', function(event, d) {
                d3.select(this)
-                 .attr('fill', isDarkMode ? '#1e293b' : '#f1f5f9')
-                 .attr('stroke', isDarkMode ? '#38bdf8' : '#6366f1')
-                 .attr('stroke-width', isDarkMode ? 1.4 : 1.1)
-                 .attr('opacity', 1.0);
+                 .attr('fill', isDarkMode ? '#121e33' : '#f8fafc')
+                 .attr('stroke', isDarkMode ? '#38bdf8' : '#818cf8')
+                 .attr('stroke-width', isDarkMode ? 1.2 : 0.9)
+                 .attr('opacity', 0.85);
                
                const regionName = d.properties?.name || d.properties?.nom || "Allemagne";
                tooltip.transition().duration(100).style('opacity', 1);
@@ -804,30 +855,30 @@ export const PlannerService = {
             })
             .on('mouseleave', function() {
                d3.select(this)
-                 .attr('fill', isDarkMode ? '#111827' : '#f8fafc')
-                 .attr('stroke', isDarkMode ? '#1f2937' : '#e2e8f0')
-                 .attr('stroke-width', isDarkMode ? 1.0 : 0.8)
-                 .attr('opacity', 0.8);
+                 .attr('fill', isDarkMode ? '#090f19' : '#fdfdfd')
+                 .attr('stroke', isDarkMode ? '#131e33' : '#f1f5f9')
+                 .attr('stroke-width', isDarkMode ? 0.9 : 0.7)
+                 .attr('opacity', isDarkMode ? 0.45 : 0.6);
                tooltip.transition().duration(200).style('opacity', 0);
             });
         }
 
-        // 1c. Draw France map on top
+        // 1c. Draw France map on top (distinctive dark blue slate / white slate texture)
         const mapGroup = this.currentMapContainerGroup.append('g').attr('class', 'france-map');
         mapGroup.selectAll('path')
           .data(franceGeo.features)
           .enter()
           .append('path')
           .attr('d', pathGenerator)
-          .attr('fill', isDarkMode ? '#151f32' : '#fcfdfe')
-          .attr('stroke', isDarkMode ? '#24334c' : '#cbd5e1') 
-          .attr('stroke-width', isDarkMode ? 1.2 : 0.9)
+          .attr('fill', isDarkMode ? '#111a2e' : '#f8fafc')
+          .attr('stroke', isDarkMode ? '#223354' : '#cbd5e1') 
+          .attr('stroke-width', isDarkMode ? 1.3 : 1.0)
           .attr('style', 'cursor: default; transition: fill 0.3s cubic-bezier(0.4, 0, 0.2, 1), stroke 0.3s;')
           .on('mouseover', function(event, d) {
              d3.select(this)
-               .attr('fill', isDarkMode ? '#1e2e4a' : '#f1f5f9')
+               .attr('fill', isDarkMode ? '#1a2947' : '#f1f5f9')
                .attr('stroke', isDarkMode ? '#38bdf8' : '#6366f1')
-               .attr('stroke-width', isDarkMode ? 1.5 : 1.2);
+               .attr('stroke-width', isDarkMode ? 1.6 : 1.3);
              
              const regionName = d.properties?.nom || d.properties?.name || "France";
              tooltip.transition().duration(100).style('opacity', 1);
@@ -840,9 +891,9 @@ export const PlannerService = {
           })
           .on('mouseleave', function() {
              d3.select(this)
-               .attr('fill', isDarkMode ? '#151f32' : '#fcfdfe')
-               .attr('stroke', isDarkMode ? '#24334c' : '#cbd5e1')
-               .attr('stroke-width', isDarkMode ? 1.2 : 0.9);
+               .attr('fill', isDarkMode ? '#111a2e' : '#f8fafc')
+               .attr('stroke', isDarkMode ? '#223354' : '#cbd5e1')
+               .attr('stroke-width', isDarkMode ? 1.3 : 1.0);
              tooltip.transition().duration(200).style('opacity', 0);
           });
 

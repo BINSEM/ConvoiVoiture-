@@ -2016,15 +2016,15 @@
                         </div>
                       </div>
 
-                      <!-- Dash photo area -->
+                      <!-- Photos Area (Dash Photo at Departure) -->
                       <div>
                         <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Cliché du Tableau de Bord (km & jauge)</label>
                         <div class="relative h-28 bg-slate-50 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800 rounded-xl flex flex-col items-center justify-center cursor-pointer overflow-hidden group hover:border-indigo-500 transition-all border-dashed" onclick="InspectionService.viewDashPhoto('depart')">
                           <img id="ins_preview_dash_dep" class="absolute inset-0 w-full h-full object-cover hidden" alt="Aperçu TDB Départ">
-                          <div id="ins_placeholder_dash_dep" class="flex flex-col items-center justify-center p-3 text-slate-400 dark:text-slate-500 group-hover:text-indigo-505 transition-colors">
-                            <i data-lucide="camera" class="w-7 h-7 mb-1 group-hover:scale-110 transition-transform"></i>
-                            <span class="text-[9px] font-bold uppercase tracking-widest text-center mt-1">Prendre photo TDB</span>
-                            <span class="text-[8px] italic text-slate-400">Pour valider le kilométrage</span>
+                          <div id="ins_placeholder_dash_dep" class="flex flex-col items-center justify-center p-3 text-slate-400 dark:text-slate-500 group-hover:text-indigo-500 transition-colors text-center font-sans">
+                            <i data-lucide="camera" class="w-6 h-6 mb-1 group-hover:scale-110 transition-transform"></i>
+                            <span class="text-[8.5px] font-bold uppercase tracking-wider mt-1 block">Photo TDB</span>
+                            <span class="text-[7.5px] italic text-slate-400 block leading-tight">Kilométrage & jauge</span>
                           </div>
                         </div>
                       </div>
@@ -2149,15 +2149,41 @@
                         </div>
                       </div>
 
-                      <!-- Dash photo area arrival -->
-                      <div>
-                        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Rapport Photo Tableau de Bord (Rendu)</label>
-                        <div class="relative h-28 bg-slate-50 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800 rounded-xl flex flex-col items-center justify-center cursor-pointer overflow-hidden group hover:border-indigo-500 transition-all border-dashed" onclick="InspectionService.viewDashPhoto('arrivee')">
-                          <img id="ins_preview_dash_arr" class="absolute inset-0 w-full h-full object-cover hidden" alt="Aperçu TDB Restitution">
-                          <div id="ins_placeholder_dash_arr" class="flex flex-col items-center justify-center p-3 text-slate-400 dark:text-slate-500 group-hover:text-indigo-500 transition-colors">
-                            <i data-lucide="camera" class="w-7 h-7 mb-1 group-hover:scale-110 transition-transform"></i>
-                            <span class="text-[9px] font-bold uppercase tracking-widest text-center mt-1">Prendre photo TDB Arrivee</span>
-                            <span class="text-[8px] italic text-slate-400 font-sans">Fait foi près des assureurs</span>
+                      <!-- Photos Area (Restitution Dash, Refundable Deposit, and Contract of Convoy) -->
+                      <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <div>
+                          <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Photo Tableau de Bord (Rendu)</label>
+                          <div class="relative h-28 bg-slate-50 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800 rounded-xl flex flex-col items-center justify-center cursor-pointer overflow-hidden group hover:border-indigo-500 transition-all border-dashed" onclick="InspectionService.viewDashPhoto('arrivee')">
+                            <img id="ins_preview_dash_arr" class="absolute inset-0 w-full h-full object-cover hidden" alt="Aperçu TDB Restitution">
+                            <div id="ins_placeholder_dash_arr" class="flex flex-col items-center justify-center p-3 text-slate-400 dark:text-slate-500 group-hover:text-indigo-500 transition-colors text-center font-sans">
+                              <i data-lucide="camera" class="w-6 h-6 mb-1 group-hover:scale-110 transition-transform"></i>
+                              <span class="text-[8.5px] font-bold uppercase tracking-wider mt-1 block">Photo TDB Arrivée</span>
+                              <span class="text-[7.5px] italic text-slate-400 block leading-tight">Kilométrage & jauge</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div>
+                          <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Reçu caution remboursable</label>
+                          <div class="relative h-28 bg-slate-50 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-850 rounded-xl flex flex-col items-center justify-center cursor-pointer overflow-hidden group hover:border-indigo-500 transition-all border-dashed" onclick="InspectionService.viewDepositPhoto()">
+                            <img id="ins_preview_deposit_receipt" class="absolute inset-0 w-full h-full object-cover hidden" alt="Aperçu Reçu Caution">
+                            <div id="ins_placeholder_deposit_receipt" class="flex flex-col items-center justify-center p-3 text-slate-400 dark:text-slate-500 group-hover:text-indigo-500 transition-colors text-center font-sans">
+                              <i data-lucide="receipt" class="w-6 h-6 mb-1 group-hover:scale-110 transition-transform"></i>
+                              <span class="text-[8.5px] font-bold uppercase tracking-wider mt-1 block">Photo Reçu</span>
+                              <span class="text-[7.5px] italic text-slate-400 block leading-tight">Dépôt de garantie</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div>
+                          <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Contrat de convoyage (Mandat)</label>
+                          <div class="relative h-28 bg-slate-50 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800 rounded-xl flex flex-col items-center justify-center cursor-pointer overflow-hidden group hover:border-indigo-500 transition-all border-dashed" onclick="InspectionService.viewContractPhoto()">
+                            <img id="ins_preview_contract_photo" class="absolute inset-0 w-full h-full object-cover hidden" alt="Aperçu Contrat">
+                            <div id="ins_placeholder_contract_photo" class="flex flex-col items-center justify-center p-3 text-slate-400 dark:text-slate-500 group-hover:text-indigo-500 transition-colors text-center font-sans">
+                              <i data-lucide="file-text" class="w-6 h-6 mb-1 group-hover:scale-110 transition-transform"></i>
+                              <span class="text-[8.5px] font-bold uppercase tracking-wider mt-1 block">Photo Contrat</span>
+                              <span class="text-[7.5px] italic text-slate-400 block leading-tight">Lettre de voiture</span>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -3037,15 +3063,15 @@
                 </div>
               </div>
 
-              <!-- Dash photo area -->
+              <!-- Photos Area (Dash Photo at Departure) -->
               <div>
                 <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Cliché du Tableau de Bord (km & jauge)</label>
                 <div class="relative h-28 bg-slate-50 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800 rounded-xl flex flex-col items-center justify-center cursor-pointer overflow-hidden group hover:border-indigo-500 transition-all border-dashed" onclick="InspectionService.viewDashPhoto('depart')">
                   <img id="ins_preview_dash_dep" class="absolute inset-0 w-full h-full object-cover hidden" alt="Aperçu TDB Départ">
-                  <div id="ins_placeholder_dash_dep" class="flex flex-col items-center justify-center p-3 text-slate-400 dark:text-slate-500 group-hover:text-indigo-500 transition-colors">
-                    <i data-lucide="camera" class="w-7 h-7 mb-1 group-hover:scale-110 transition-transform"></i>
-                    <span class="text-[9px] font-bold uppercase tracking-widest text-center mt-1">Prendre photo TDB</span>
-                    <span class="text-[8px] italic text-slate-400">Pour valider le kilométrage</span>
+                  <div id="ins_placeholder_dash_dep" class="flex flex-col items-center justify-center p-3 text-slate-400 dark:text-slate-500 group-hover:text-indigo-500 transition-colors text-center font-sans">
+                    <i data-lucide="camera" class="w-6 h-6 mb-1 group-hover:scale-110 transition-transform"></i>
+                    <span class="text-[8.5px] font-bold uppercase tracking-wider mt-1 block">Photo TDB</span>
+                    <span class="text-[7.5px] italic text-slate-400 block leading-tight">Kilométrage & jauge</span>
                   </div>
                 </div>
               </div>
@@ -3170,15 +3196,41 @@
                 </div>
               </div>
 
-              <!-- Dash photo area arrival -->
-              <div>
-                <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Rapport Photo Tableau de Bord (Rendu)</label>
-                <div class="relative h-28 bg-slate-50 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800 rounded-xl flex flex-col items-center justify-center cursor-pointer overflow-hidden group hover:border-indigo-500 transition-all border-dashed" onclick="InspectionService.viewDashPhoto('arrivee')">
-                  <img id="ins_preview_dash_arr" class="absolute inset-0 w-full h-full object-cover hidden" alt="Aperçu TDB Restitution">
-                  <div id="ins_placeholder_dash_arr" class="flex flex-col items-center justify-center p-3 text-slate-400 dark:text-slate-500 group-hover:text-indigo-500 transition-colors">
-                    <i data-lucide="camera" class="w-7 h-7 mb-1 group-hover:scale-110 transition-transform"></i>
-                    <span class="text-[9px] font-bold uppercase tracking-widest text-center mt-1">Prendre photo TDB Arrivee</span>
-                    <span class="text-[8px] italic text-slate-400 font-sans">Fait foi près des assureurs</span>
+              <!-- Photos Area (Restitution Dash, Refundable Deposit, and Contract of Convoy) -->
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div>
+                  <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Photo Tableau de Bord (Rendu)</label>
+                  <div class="relative h-28 bg-slate-50 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800 rounded-xl flex flex-col items-center justify-center cursor-pointer overflow-hidden group hover:border-indigo-500 transition-all border-dashed" onclick="InspectionService.viewDashPhoto('arrivee')">
+                    <img id="ins_preview_dash_arr" class="absolute inset-0 w-full h-full object-cover hidden" alt="Aperçu TDB Restitution">
+                    <div id="ins_placeholder_dash_arr" class="flex flex-col items-center justify-center p-3 text-slate-400 dark:text-slate-500 group-hover:text-indigo-500 transition-colors text-center font-sans">
+                      <i data-lucide="camera" class="w-6 h-6 mb-1 group-hover:scale-110 transition-transform"></i>
+                      <span class="text-[8.5px] font-bold uppercase tracking-wider mt-1 block">Photo TDB Arrivée</span>
+                      <span class="text-[7.5px] italic text-slate-400 block leading-tight">Kilométrage & jauge</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Reçu caution remboursable</label>
+                  <div class="relative h-28 bg-slate-50 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-850 rounded-xl flex flex-col items-center justify-center cursor-pointer overflow-hidden group hover:border-indigo-500 transition-all border-dashed" onclick="InspectionService.viewDepositPhoto()">
+                    <img id="ins_preview_deposit_receipt" class="absolute inset-0 w-full h-full object-cover hidden" alt="Aperçu Reçu Caution">
+                    <div id="ins_placeholder_deposit_receipt" class="flex flex-col items-center justify-center p-3 text-slate-400 dark:text-slate-500 group-hover:text-indigo-500 transition-colors text-center font-sans">
+                      <i data-lucide="receipt" class="w-6 h-6 mb-1 group-hover:scale-110 transition-transform"></i>
+                      <span class="text-[8.5px] font-bold uppercase tracking-wider mt-1 block">Photo Reçu</span>
+                      <span class="text-[7.5px] italic text-slate-400 block leading-tight">Dépôt de garantie</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Contrat de convoyage (Mandat)</label>
+                  <div class="relative h-28 bg-slate-50 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800 rounded-xl flex flex-col items-center justify-center cursor-pointer overflow-hidden group hover:border-indigo-500 transition-all border-dashed" onclick="InspectionService.viewContractPhoto()">
+                    <img id="ins_preview_contract_photo" class="absolute inset-0 w-full h-full object-cover hidden" alt="Aperçu Contrat">
+                    <div id="ins_placeholder_contract_photo" class="flex flex-col items-center justify-center p-3 text-slate-400 dark:text-slate-500 group-hover:text-indigo-500 transition-colors text-center font-sans">
+                      <i data-lucide="file-text" class="w-6 h-6 mb-1 group-hover:scale-110 transition-transform"></i>
+                      <span class="text-[8.5px] font-bold uppercase tracking-wider mt-1 block">Photo Contrat</span>
+                      <span class="text-[7.5px] italic text-slate-400 block leading-tight">Lettre de voiture</span>
+                    </div>
                   </div>
                 </div>
               </div>
