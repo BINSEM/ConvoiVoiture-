@@ -1,0 +1,336 @@
+/* ==========================================================================
+   CSS Spécifique - PWA Raccourci "État des Lieux" (Android Optimisé)
+   Stylisé avec soin selon les principes du Material Design 3 de Google
+   ========================================================================== */
+
+:root {
+  --primary: #1976D2;
+  --primary-dark: #1565C0;
+  --primary-light: #E3F2FD;
+  --slate-900: #0F172A;
+  --slate-700: #334155;
+  --slate-600: #475569;
+  --slate-500: #64748B;
+  --slate-400: #94A3B8;
+  --gray-50:  #F8FAFC;
+  --gray-100: #F1F5F9;
+  --emerald-600: #059669;
+  --emerald-50: #ECFDF5;
+  --red-600: #DC2626;
+  --red-50: #FEF2F2;
+  --border-radius-card: 24px;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background-color: var(--gray-50);
+  background-image: radial-gradient(#1976d211 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+/* Base Utility Classes inline styling override */
+.hidden {
+  display: none !important;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.text-left {
+  text-align: left;
+}
+
+.font-mono {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.font-extrabold {
+  font-weight: 800;
+}
+
+.font-black {
+  font-weight: 900;
+}
+
+/* Animations */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulseScale {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 4px 10px rgba(25, 118, 210, 0.15);
+  }
+  50% {
+    transform: scale(1.04);
+    box-shadow: 0 10px 20px rgba(25, 118, 210, 0.25);
+  }
+}
+
+@keyframes bounceLogo {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+.card-entrance {
+  animation: fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.logo-pulse {
+  animation: pulseScale 3s infinite ease-in-out;
+}
+
+.app-logo-bounce {
+  animation: bounceLogo 2.5s infinite ease-in-out;
+}
+
+/* Spinner Circulaire Material Design */
+@keyframes rotateSpinner {
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes dashSpinner {
+  0% {
+    stroke-dasharray: 1, 150;
+    stroke-dashoffset: 0;
+  }
+  50% {
+    stroke-dasharray: 90, 150;
+    stroke-dashoffset: -35;
+  }
+  100% {
+    stroke-dasharray: 90, 150;
+    stroke-dashoffset: -124;
+  }
+}
+
+.loading-spinner {
+  animation: rotateSpinner 2s linear infinite;
+}
+
+.loading-spinner .path {
+  stroke: var(--primary);
+  stroke-linecap: round;
+  animation: dashSpinner 1.5s ease-in-out infinite;
+}
+
+/* Boutons et Éléments Interactifs */
+button {
+  outline: none;
+  border: none;
+  font-family: inherit;
+}
+
+.bg-blue-600 {
+  background-color: var(--primary);
+}
+
+.bg-blue-600:hover {
+  background-color: var(--primary-dark);
+}
+
+/* Layout elements for safety */
+.max-w-sm {
+  max-width: 384px;
+}
+
+.w-full {
+  width: 100%;
+}
+
+.rounded-3xl {
+  border-radius: var(--border-radius-card);
+}
+
+.border {
+  border: 1px solid var(--gray-100);
+}
+
+.shadow-xl {
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+}
+
+/* Custom Lists */
+.flex {
+  display: flex;
+}
+
+.flex-col {
+  flex-direction: column;
+}
+
+.items-center {
+  align-items: center;
+}
+
+.justify-center {
+  justify-content: center;
+}
+
+.space-y-6 > * + * {
+  margin-top: 24px;
+}
+
+.space-y-5 > * + * {
+  margin-top: 20px;
+}
+
+.space-y-4 > * + * {
+  margin-top: 16px;
+}
+
+.space-y-3 > * + * {
+  margin-top: 12px;
+}
+
+.space-y-2 > * + * {
+  margin-top: 8px;
+}
+
+.space-y-3\.5 > * + * {
+  margin-top: 14px;
+}
+
+.gap-3 {
+  gap: 12px;
+}
+
+.gap-2 {
+  gap: 8px;
+}
+
+.p-6 {
+  padding: 24px;
+}
+
+.py-3\.5 {
+  padding-top: 14px;
+  padding-bottom: 14px;
+}
+
+.px-6 {
+  padding-left: 24px;
+  padding-right: 24px;
+}
+
+/* Typographies and colors specifically structured */
+.tracking-tight {
+  letter-spacing: -0.025em;
+}
+
+.text-2xl {
+  font-size: 24px;
+  line-height: 32px;
+}
+
+.text-lg {
+  font-size: 18px;
+  line-height: 28px;
+}
+
+.text-sm {
+  font-size: 14px;
+}
+
+.text-xs {
+  font-size: 12px;
+}
+
+.text-slate-900 {
+  color: var(--slate-900);
+}
+
+.text-slate-800 {
+  color: var(--slate-700);
+}
+
+.text-slate-600 {
+  color: var(--slate-600);
+}
+
+.text-slate-500 {
+  color: var(--slate-500);
+}
+
+.text-slate-400 {
+  color: var(--slate-400);
+}
+
+.text-blue-600 {
+  color: var(--primary);
+}
+
+.bg-blue-50 {
+  background-color: var(--primary-light);
+}
+
+.bg-emerald-50 {
+  background-color: var(--emerald-50);
+}
+
+.text-emerald-850 {
+  color: var(--emerald-600);
+}
+
+.text-emerald-650 {
+  color: var(--slate-700);
+}
+
+.text-emerald-700 {
+  color: var(--emerald-600);
+}
+
+.border-emerald-100 {
+  border-color: #A7F3D0;
+}
+
+.bg-red-50 {
+  background-color: var(--red-50);
+}
+
+.text-red-600 {
+  color: var(--red-600);
+}
+
+.border-red-100 {
+  border-color: #FECACA;
+}
+
+/* Active Scale Transitions for Touch devices */
+.active\:scale-\[0\.98\]:active {
+  transform: scale(0.98);
+}
+
+.active\:scale-95:active {
+  transform: scale(0.95);
+}
+
+.transition-all {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.cursor-pointer {
+  cursor: pointer;
+}

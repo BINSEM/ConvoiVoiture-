@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>État des Lieux - Installer</title>
+  
+  <!-- Configuration Progressive Web App (PWA) -->
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#1976D2">
+  <meta name="mobile-web-app-capable" content="yes">
+  <!-- Apple/Safari Configuration -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="EDL">
+  
+  <!-- Icones and Assets -->
+  <link rel="icon" type="image/png" href="icon-512.png">
+  <link rel="apple-touch-icon" href="icon-512.png">
+
+  <!-- Google Fonts import (Outfit and JetBrains Mono) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;900&family=JetBrains+Mono&display=swap" rel="stylesheet">
+  
+  <!-- Custom Compiled Mini Stylesheet -->
+  <link rel="stylesheet" href="styles.css">
+
+  <!-- Lucide Icons Library Integration -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="bg-gray-50 text-slate-900 font-sans antialiased flex flex-col justify-between min-h-screen">
+
+  <!-- ==========================================================================
+       ÉCRAN 1 : CHARGEMENT ET REDIRECTION AUTOMATIQUE (MODE STANDALONE)
+       ========================================================================== -->
+  <div id="loader-screen" class="hidden fixed inset-0 bg-white z-50 flex flex-col items-center justify-center p-6 text-center">
+    <div class="logo-container mb-6 w-24 h-24 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/20">
+      <img src="icon-512.png" alt="EDL Icon" class="w-16 h-16 object-contain" referrerPolicy="no-referrer">
+    </div>
+    
+    <div class="space-y-3">
+      <h2 class="text-2xl font-black text-slate-900 tracking-tight">État des Lieux</h2>
+      <p id="loader-text" class="text-slate-500 text-sm max-w-xs mx-auto">Redirection vers l'application de convoyage active...</p>
+    </div>
+    
+    <!-- Cercle de chargement Material Design -->
+    <div class="mt-8 flex flex-col items-center">
+      <svg class="loading-spinner w-12 h-12" viewBox="0 0 50 50">
+        <circle class="path" cx="25" cy="25" r="20" fill="none" stroke-width="4"></circle>
+      </svg>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       ÉCRAN 2 : ACCUEIL ET INSTALLATION DU RACCOURCI (MODE NAVIGATEUR)
+       ========================================================================== -->
+  <div id="main-landing-screen" class="flex-1 flex flex-col items-center justify-center p-6">
+    <div class="w-full max-w-sm bg-white rounded-3xl border border-slate-100 shadow-xl shadow-slate-200/50 p-6 space-y-6 text-center card-entrance">
+      
+      <!-- Logo et Identification de la PWA -->
+      <div class="flex flex-col items-center space-y-3">
+        <div class="relative w-20 h-20 rounded-2xl overflow-hidden shadow-md shadow-blue-500/10 logo-pulse">
+          <img src="icon-512.png" alt="EDL Logo" class="w-full h-full object-cover" referrerPolicy="no-referrer">
+        </div>
+        <div>
+          <h1 class="text-2xl font-extrabold text-slate-900 tracking-tight">Raccourci État des Lieux</h1>
+          <p class="text-xs font-mono text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full inline-block mt-1">Application Installable Android</p>
+        </div>
+      </div>
+
+      <div class="border-t border-slate-100 my-4"></div>
+
+      <!-- Explications des bénéfices d'installation -->
+      <div class="text-left space-y-3.5 text-sm text-slate-600">
+        <div class="flex items-start gap-3">
+          <div class="p-1 rounded-lg bg-blue-50 text-blue-600 shrink-0">
+            <i data-lucide="smartphone" class="w-4 h-4"></i>
+          </div>
+          <div>
+            <p class="font-bold text-slate-800">Mode Plein Écran</p>
+            <p class="text-xs text-slate-500">Bénéficiez de 100% de votre écran sans les barres d'adresse de Chrome.</p>
+          </div>
+        </div>
+        
+        <div class="flex items-start gap-3">
+          <div class="p-1 rounded-lg bg-indigo-50 text-indigo-600 shrink-0">
+            <i data-lucide="zap" class="w-4 h-4"></i>
+          </div>
+          <div>
+            <p class="font-bold text-slate-800">Lanceur Accueil</p>
+            <p class="text-xs text-slate-500">Démarrez vos rapports de convoyage d'un seul clic depuis votre bureau.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Zone Interactive d'Installation -->
+      <div class="space-y-3 pt-2" id="action-area">
+        <!-- Bouton d'installation visible et dynamique -->
+        <button id="btn-install-pwa" class="hidden w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 px-6 rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20 active:scale-[0.98] transition-all cursor-pointer">
+          <i data-lucide="download" class="w-5 h-5"></i>
+          Installer le raccourci
+        </button>
+
+        <!-- Message d'explications de réussite de l'installation -->
+        <div id="installed-msg" class="hidden p-4 bg-emerald-50 rounded-2xl text-emerald-850 space-y-2 border border-emerald-100">
+          <div class="flex items-center justify-center gap-2 text-emerald-700 font-bold text-sm">
+            <i data-lucide="check-circle" class="w-5 h-5"></i>
+            Raccourci Installé !
+          </div>
+          <p class="text-xs text-emerald-650 leading-relaxed text-left">
+            Vous pouvez désormais fermer cet onglet et lancer l'application <strong>État des Lieux</strong> directement depuis l'écran d'accueil de votre téléphone.
+          </p>
+        </div>
+
+        <!-- Instructions pour installer manuellement si non-supporté par le devis de prompt automatique -->
+        <div id="unsupported-msg" class="text-xs text-slate-500 p-3 bg-slate-50 rounded-xl leading-relaxed text-left">
+          <div class="flex items-center gap-1.5 font-bold text-slate-700 mb-1">
+            <i data-lucide="info" class="w-4 h-4 text-blue-600"></i>
+            Installation Android
+          </div>
+          Pour installer le raccourci : appuyez sur le bouton <span class="font-bold">⋮</span> en haut à droite de Chrome et choisissez <span class="font-bold font-mono text-slate-800">"Ajouter à l'écran d'accueil"</span>.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       ÉCRAN 3 : ALERTE HORS-LIGNE (LANCÉ SANS RÉSEAU INTERNET)
+       ========================================================================== -->
+  <div id="offline-fallback-screen" class="hidden flex-1 flex flex-col items-center justify-center p-6">
+    <div class="w-full max-w-sm bg-white rounded-3xl border border-red-100 p-6 space-y-5 text-center shadow-lg shadow-red-500/5 card-entrance">
+      <div class="w-16 h-16 bg-red-50 text-red-600 rounded-full flex items-center justify-center mx-auto shadow-inner">
+        <i data-lucide="wifi-off" class="w-8 h-8"></i>
+      </div>
+      <div class="space-y-2">
+        <h3 class="text-lg font-black text-slate-900">Connexion Internet Requise</h3>
+        <p class="text-xs text-slate-500 leading-relaxed text-left">
+          L'outil d'État des Lieux a besoin d'une connexion internet active pour récupérer les données de convoyage existantes et charger vos justificatifs directement dans Google Drive.
+        </p>
+      </div>
+      <button onclick="window.location.reload()" class="w-full py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-all flex items-center justify-center gap-2 active:scale-95 text-xs cursor-pointer">
+        <i data-lucide="rotate-cw" class="w-4 h-4"></i>
+        Réessayer la connexion
+      </button>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       ÉCRAN 4 : RESTRICTION D'ACCÈS COMPTE (NON-ADMINISTRATEUR)
+       ========================================================================== -->
+  <div id="admin-restriction-screen" class="hidden flex-1 flex flex-col items-center justify-center p-6">
+    <div class="w-full max-w-sm bg-white rounded-3xl border border-amber-200 p-6 space-y-5 text-center shadow-lg shadow-amber-500/5 card-entrance">
+      <div class="w-16 h-16 bg-amber-50 text-amber-600 rounded-full flex items-center justify-center mx-auto shadow-inner">
+        <i data-lucide="shield-alert" class="w-8 h-8"></i>
+      </div>
+      <div class="space-y-2">
+        <h3 class="text-lg font-black text-slate-900">Accès Administrateur Uniquement</h3>
+        <p class="text-xs text-slate-500 leading-relaxed text-left">
+          Ce raccourci d'application PWA est réservé exclusivement aux comptes de gestion disposant du grade <strong>Administrateur</strong>. 
+          Votre profil actuel ne dispose pas des droits requis pour exécuter l'application d'État des Lieux autonome.
+        </p>
+      </div>
+      <button onclick="window.location.href='/'" class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2 active:scale-95 text-xs cursor-pointer">
+        <i data-lucide="log-in" class="w-4 h-4"></i>
+        Se connecter avec un compte Admin
+      </button>
+    </div>
+  </div>
+
+  <!-- Pied de Page Minimaliste -->
+  <footer class="p-6 text-center text-[10px] text-slate-400 font-mono">
+    &copy; 2026 CONVOY PRO &bull; TOUS DROITS RÉSERVÉS
+  </footer>
+
+  <!-- Code Applicatif Principal de la PWA -->
+  <script src="app.js"></script>
+</body>
+</html>

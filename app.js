@@ -2227,6 +2227,8 @@ class ConvoyageApp {
 
     // 2. visibilité des éléments de navigation selon le grade
     const adminMenuGroup = document.getElementById('admin-menu-group');
+    const pwaCard = document.getElementById('settings-pwa-card');
+    const inspectionPwaBanner = document.getElementById('inspection-mobile-pwa-banner');
 
     if (userRole === 'ACCOUNTANT') {
       document.body.classList.add('is-accountant');
@@ -2238,6 +2240,8 @@ class ConvoyageApp {
         if (el) el.classList.add('hidden');
       });
       if (adminMenuGroup) adminMenuGroup.classList.add('hidden');
+      if (pwaCard) pwaCard.classList.add('hidden');
+      if (inspectionPwaBanner) inspectionPwaBanner.classList.add('hidden');
 
       // Hide mobile nav items
       const restrictedMobile = ['planner', 'settings'];
@@ -2275,6 +2279,8 @@ class ConvoyageApp {
       });
 
       if (adminMenuGroup) adminMenuGroup.classList.remove('hidden');
+      if (pwaCard) pwaCard.classList.remove('hidden');
+      if (inspectionPwaBanner) inspectionPwaBanner.classList.remove('hidden');
       
       const rbacButtons = [
         'btn_quick_add',
