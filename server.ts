@@ -7,6 +7,7 @@ import { google } from "googleapis";
 import { Readable } from "stream";
 import fs from "fs";
 import { initDatabase, DbService, hashPassword } from "./server/db";
+import { DriveSyncService } from "./server/driveSync";
 
 // Initialize the database with default seeded users
 initDatabase();
@@ -206,7 +207,7 @@ async function startServer() {
     DbService.addLog('LOGIN', user.username, `Connexion réussie de l'utilisateur : ${user.username}`);
 
     res.setHeader('Set-Cookie', [
-      `session_token=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${4 * 60 * 60}`
+      `session_token=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${365 * 24 * 60 * 60}`
     ]);
 
     return res.json({
@@ -425,7 +426,7 @@ async function startServer() {
   });
 
   // Save missions locally to fallback sample-data.json
-  app.post("/api/missions/save-local", authenticate, (req, res) => {
+  app.post("/api/missions/save-local", authenticate, (req: any, res) => {
     try {
       const { missions } = req.body;
       if (!Array.isArray(missions)) {
@@ -433,6 +434,15 @@ async function startServer() {
       }
       const dataPath = path.join(process.cwd(), "data", "sample-data.json");
       fs.writeFileSync(dataPath, JSON.stringify(missions, null, 2), "utf-8");
+
+      // Background non-blocking sync if Google Drive access token is attached
+      const authHeader = req.headers.authorization;
+      if (authHeader && authHeader.startsWith("Bearer ")) {
+        const token = authHeader.split(" ")[1];
+        const actingUser = req.user?.username || "SYSTEM";
+        DriveSyncService.runBackgroundSync(token, missions, actingUser);
+      }
+
       return res.json({ success: true });
     } catch (err: any) {
       console.error("Error saving local sample data:", err);
@@ -562,7 +572,212 @@ async function startServer() {
     }
   });
 
-  app.post("/api/drive/upload", authenticate, requireRole(["ADMIN"]), upload.single("file"), async (req: any, res) => {
+  // Bidirectional monthly sync
+  app.post("/api/drive/sync-all-months", authenticate, async (req: any, res) => {
+    try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        return res.status(401).json({ success: false, error: "Missing or invalid authorization header" });
+      }
+      const token = authHeader.split(" ")[1];
+
+      const dataPath = path.join(process.cwd(), "data", "sample-data.json");
+      let localMissions: any[] = [];
+      if (fs.existsSync(dataPath)) {
+        try {
+          localMissions = JSON.parse(fs.readFileSync(dataPath, "utf-8"));
+        } catch (_) {}
+      }
+
+      const actingUser = req.user?.username || "SYSTEM";
+      const syncedMissions = await DriveSyncService.syncAllMonthsBidirectional(token, localMissions, actingUser);
+
+      fs.writeFileSync(dataPath, JSON.stringify(syncedMissions, null, 2), "utf-8");
+
+      return res.json({ success: true, missions: syncedMissions });
+    } catch (err: any) {
+      console.error("Error in sync-all-months:", err);
+      return res.status(500).json({ success: false, error: err.message || "Failed bidirectional synchronization" });
+    }
+  });
+
+  // List all available month files on Drive
+  app.get("/api/drive/synthesis/months", authenticate, async (req: any, res) => {
+    try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        return res.status(401).json({ success: false, error: "Missing or invalid authorization header" });
+      }
+      const token = authHeader.split(" ")[1];
+
+      const oauth2Client = new google.auth.OAuth2();
+      oauth2Client.setCredentials({ access_token: token });
+      const drive = google.drive({ version: "v3", auth: oauth2Client });
+
+      let q = "mimeType = 'application/vnd.google-apps.folder' and name = 'Convoyeur Professionnel' and trashed = false and 'root' in parents";
+      let listResponse = await drive.files.list({ q, spaces: "drive", fields: "files(id, name)", pageSize: 1 });
+      const roots = listResponse.data.files || [];
+      if (roots.length === 0 || !roots[0].id) {
+        return res.json({ success: true, months: [] });
+      }
+
+      q = `mimeType = 'application/vnd.google-apps.folder' and name = 'Convoyages' and trashed = false and '${roots[0].id}' in parents`;
+      listResponse = await drive.files.list({ q, spaces: "drive", fields: "files(id, name)", pageSize: 1 });
+      const convoyages = listResponse.data.files || [];
+      if (convoyages.length === 0 || !convoyages[0].id) {
+        return res.json({ success: true, months: [] });
+      }
+
+      // List all year folders under Convoyages
+      q = `mimeType = 'application/vnd.google-apps.folder' and trashed = false and '${convoyages[0].id}' in parents`;
+      listResponse = await drive.files.list({ q, spaces: "drive", fields: "files(id, name)", pageSize: 100 });
+      const yearFolders = listResponse.data.files || [];
+
+      const MONTH_NAMES_TO_NUM: { [key: string]: string } = {
+        "january": "01", "february": "02", "march": "03", "april": "04", "may": "05", "june": "06",
+        "july": "07", "august": "08", "september": "09", "october": "10", "november": "11", "december": "12",
+        "janvier": "01", "février": "02", "mars": "03", "avril": "04", "mai": "05", "juin": "06",
+        "juillet": "07", "août": "08", "septembre": "09", "octobre": "10", "novembre": "11", "décembre": "12"
+      };
+
+      const monthsList: any[] = [];
+
+      for (const yearFolder of yearFolders) {
+        if (!yearFolder.name || isNaN(Number(yearFolder.name)) || yearFolder.name.length !== 4) continue;
+        const year = yearFolder.name;
+
+        // List month folders under this year
+        const qMonths = `mimeType = 'application/vnd.google-apps.folder' and trashed = false and '${yearFolder.id}' in parents`;
+        const monthsResponse = await drive.files.list({ q: qMonths, spaces: "drive", fields: "files(id, name)", pageSize: 100 });
+        const monthFolders = monthsResponse.data.files || [];
+
+        for (const monthFolder of monthFolders) {
+          if (!monthFolder.name) continue;
+          const monthNameLower = monthFolder.name.toLowerCase();
+          const monthNum = MONTH_NAMES_TO_NUM[monthNameLower];
+          if (monthNum) {
+            monthsList.push({
+              key: `${year}-${monthNum}`,
+              label: `${monthFolder.name} ${year}`,
+              folderId: monthFolder.id
+            });
+          }
+        }
+      }
+
+      monthsList.sort((a, b) => b.key.localeCompare(a.key));
+
+      return res.json({ success: true, months: monthsList });
+    } catch (err: any) {
+      console.error("Error retrieving monthly directories:", err);
+      return res.status(500).json({ success: false, error: err.message || "Failed to retrieve monthly directories" });
+    }
+  });
+
+  // Get specific monthly file synthesis data
+  app.get("/api/drive/synthesis/month/:yearMonth", authenticate, async (req: any, res) => {
+    try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        return res.status(401).json({ success: false, error: "Missing or invalid authorization header" });
+      }
+      const token = authHeader.split(" ")[1];
+      const yearMonth = req.params.yearMonth;
+
+      const parts = yearMonth.split("-");
+      if (parts.length !== 2) {
+        return res.status(400).json({ success: false, error: "Invalid year-month parameter format" });
+      }
+      const [year, month] = parts;
+
+      const oauth2Client = new google.auth.OAuth2();
+      oauth2Client.setCredentials({ access_token: token });
+      const drive = google.drive({ version: "v3", auth: oauth2Client });
+
+      let q = "mimeType = 'application/vnd.google-apps.folder' and name = 'Convoyeur Professionnel' and trashed = false and 'root' in parents";
+      let listResponse = await drive.files.list({ q, spaces: "drive", fields: "files(id, name)", pageSize: 1 });
+      const roots = listResponse.data.files || [];
+      if (roots.length === 0 || !roots[0].id) {
+        return res.status(404).json({ success: false, error: "Root folder 'Convoyeur Professionnel' not found." });
+      }
+
+      q = `mimeType = 'application/vnd.google-apps.folder' and name = 'Convoyages' and trashed = false and '${roots[0].id}' in parents`;
+      listResponse = await drive.files.list({ q, spaces: "drive", fields: "files(id, name)", pageSize: 1 });
+      const convoyages = listResponse.data.files || [];
+      if (convoyages.length === 0 || !convoyages[0].id) {
+        return res.status(404).json({ success: false, error: "Folder 'Convoyages' not found." });
+      }
+
+      // Find Year Folder under Convoyages
+      q = `mimeType = 'application/vnd.google-apps.folder' and name = '${year}' and trashed = false and '${convoyages[0].id}' in parents`;
+      listResponse = await drive.files.list({ q, spaces: "drive", fields: "files(id, name)", pageSize: 1 });
+      const yearFolders = listResponse.data.files || [];
+      if (yearFolders.length === 0 || !yearFolders[0].id) {
+        return res.status(404).json({ success: false, error: `Folder for year '${year}' not found.` });
+      }
+
+      const FRENCH_MONTH_NAMES: { [key: string]: string } = {
+        "01": "Janvier",
+        "02": "Février",
+        "03": "Mars",
+        "04": "Avril",
+        "05": "Mai",
+        "06": "Juin",
+        "07": "Juillet",
+        "08": "Août",
+        "09": "Septembre",
+        "10": "Octobre",
+        "11": "Novembre",
+        "12": "Décembre"
+      };
+      const frenchMonth = FRENCH_MONTH_NAMES[month] || "Juin";
+
+      // Find French Month Folder under Year Folder
+      q = `mimeType = 'application/vnd.google-apps.folder' and name = '${frenchMonth}' and trashed = false and '${yearFolders[0].id}' in parents`;
+      listResponse = await drive.files.list({ q, spaces: "drive", fields: "files(id, name)", pageSize: 1 });
+      const monthFolders = listResponse.data.files || [];
+      if (monthFolders.length === 0 || !monthFolders[0].id) {
+        return res.status(404).json({ success: false, error: `Folder for month '${frenchMonth}' not found under year '${year}'.` });
+      }
+
+      // Find 'Data' folder
+      q = `mimeType = 'application/vnd.google-apps.folder' and name = 'Data' and trashed = false and '${monthFolders[0].id}' in parents`;
+      listResponse = await drive.files.list({ q, spaces: "drive", fields: "files(id, name)", pageSize: 1 });
+      const dataFolders = listResponse.data.files || [];
+      if (dataFolders.length === 0 || !dataFolders[0].id) {
+        return res.status(404).json({ success: false, error: `Subfolder 'Data' in '${frenchMonth} ${year}' not found.` });
+      }
+
+      const fileName = `missions-${year}-${month}.json`;
+      q = `name = '${fileName}' and trashed = false and '${dataFolders[0].id}' in parents`;
+      listResponse = await drive.files.list({ q, spaces: "drive", fields: "files(id, name)", pageSize: 1 });
+      const files = listResponse.data.files || [];
+      if (files.length === 0 || !files[0].id) {
+        return res.json({ success: true, missions: [], label: `${frenchMonth} ${year}` });
+      }
+
+      const fileResponse = await drive.files.get({
+        fileId: files[0].id,
+        alt: "media"
+      }, {
+        responseType: "text"
+      });
+
+      let jsonMissions: any[] = [];
+      try {
+        jsonMissions = typeof fileResponse.data === "string" ? JSON.parse(fileResponse.data) : fileResponse.data;
+      } catch (parseErr) {
+        console.error("Error parsing downloaded missions synthesis JSON:", parseErr);
+      }
+
+      return res.json({ success: true, missions: jsonMissions, label: `${frenchMonth} ${year}` });
+    } catch (err: any) {
+      console.error("Error fetching synthesis for month:", err);
+      return res.status(500).json({ success: false, error: err.message || "Failed to download Synthesis data." });
+    }
+  });
+
+  app.post("/api/drive/upload", authenticate, upload.single("file"), async (req: any, res) => {
     try {
       const authHeader = req.headers.authorization;
       if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -620,11 +835,30 @@ async function startServer() {
         body: Readable.from(req.file.buffer)
       };
 
-      const driveFile = await drive.files.create({
-        requestBody: fileMetadata,
-        media: media,
-        fields: "id"
+      // Check if file already exists in this exact folder
+      const q = `name = '${filename.replace(/'/g, "\\'")}' and '${etatDesLieuxId}' in parents and trashed = false`;
+      const duplicateList = await drive.files.list({
+        q: q,
+        spaces: "drive",
+        fields: "files(id)",
+        pageSize: 1
       });
+
+      let driveFile;
+      if (duplicateList.data.files && duplicateList.data.files.length > 0) {
+        const existingId = duplicateList.data.files[0].id;
+        driveFile = await drive.files.update({
+          fileId: existingId!,
+          media: media,
+          fields: "id"
+        });
+      } else {
+        driveFile = await drive.files.create({
+          requestBody: fileMetadata,
+          media: media,
+          fields: "id"
+        });
+      }
 
       return res.json({
         success: true,

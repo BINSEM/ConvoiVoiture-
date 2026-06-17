@@ -22,6 +22,7 @@ export const InspectionService = {
   dashPhotoArr: null,
   depositReceiptPhoto: null,
   contractPhoto: null,
+  hasDepositReceipt: false,
 
   // Arrivée details
   arriveeKm: '',
@@ -165,6 +166,15 @@ export const InspectionService = {
     this.dashPhotoArr = null;
     this.depositReceiptPhoto = null;
     this.contractPhoto = null;
+    this.hasDepositReceipt = false;
+
+    // Reset optional deposit receipt UI
+    const hasReceiptChk = document.getElementById('ins_has_deposit_receipt');
+    if (hasReceiptChk) hasReceiptChk.checked = false;
+    const depositContainer = document.getElementById('ins_deposit_receipt_container');
+    if (depositContainer) {
+      depositContainer.className = "relative h-28 bg-slate-50 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-850 rounded-xl flex flex-col items-center justify-center cursor-not-allowed opacity-40 overflow-hidden group transition-all border-dashed";
+    }
 
     // Reset arrival inputs in HTML if they exist
     const kmArrEl = document.getElementById('ins_arrivee_km');
@@ -452,12 +462,27 @@ export const InspectionService = {
       modal.classList.add('flex');
     }
 
+    const statusText = document.getElementById('ins_camera_status');
+    if (statusText) {
+      statusText.classList.remove('hidden');
+      statusText.innerHTML = `
+        <div class="flex flex-col items-center justify-center gap-3">
+          <svg class="animate-spin h-8 w-8 text-indigo-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <span class="text-xs font-bold text-slate-300">DÉMARRAGE DE LA CAMÉRA FULL-SCREEN...</span>
+        </div>
+      `;
+    }
+
     try {
+      // High-resolution constraints optimized for modern full-screen capture
       const constraints = {
         video: {
           facingMode: { ideal: this.facingMode },
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
+          width: { ideal: 3845, max: 4096 },
+          height: { ideal: 2160, max: 2160 }
         },
         audio: false
       };
@@ -468,15 +493,43 @@ export const InspectionService = {
       const video = document.getElementById('ins_camera_video');
       if (video) {
         video.srcObject = stream;
-        video.onloadedmetadata = () => {
-          video.play().catch(err => console.warn("Auto-play blocked:", err));
+        video.onloadedmetadata = async () => {
+          try {
+            await video.play();
+          } catch (err) {
+            console.warn("Auto-play blocked:", err);
+          }
+          if (statusText) {
+            statusText.classList.add('hidden');
+          }
         };
       }
-      
-      const statusText = document.getElementById('ins_camera_status');
-      if (statusText) {
-        statusText.innerText = `Caméra active (${this.facingMode === 'environment' ? 'Arrière' : 'Avant'}) • Touchez l'obturateur rose`;
+
+      // Check and apply continuous autofocus and other advanced capabilities if device supports them
+      const track = stream.getVideoTracks()[0];
+      if (track && typeof track.getCapabilities === 'function') {
+        try {
+          const capabilities = track.getCapabilities();
+          const advancedConstraints = {};
+
+          if (capabilities.focusMode && capabilities.focusMode.includes('continuous')) {
+            advancedConstraints.focusMode = 'continuous';
+          }
+          if (capabilities.whiteBalanceMode && capabilities.whiteBalanceMode.includes('continuous')) {
+            advancedConstraints.whiteBalanceMode = 'continuous';
+          }
+          if (capabilities.exposureMode && capabilities.exposureMode.includes('continuous')) {
+            advancedConstraints.exposureMode = 'continuous';
+          }
+
+          if (Object.keys(advancedConstraints).length > 0) {
+            await track.applyConstraints({ advanced: [advancedConstraints] });
+          }
+        } catch (capError) {
+          console.warn("Could not apply continuous focusing capabilities:", capError);
+        }
       }
+
     } catch (err) {
       const isPermissionDenied = err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError' || err.message?.toLowerCase().includes('permission') || err.message?.toLowerCase().includes('denied');
       if (isPermissionDenied) {
@@ -490,17 +543,16 @@ export const InspectionService = {
         const video = document.getElementById('ins_camera_video');
         if (video) {
           video.srcObject = stream;
-          video.play().catch(e => console.warn("Play general failed:", e));
+          video.onloadedmetadata = () => {
+            video.play().catch(e => console.warn("Play fallback failed:", e));
+            if (statusText) {
+              statusText.classList.add('hidden');
+            }
+          };
         }
       } catch (fallbackErr) {
-        const isFallbackPermissionDenied = fallbackErr.name === 'NotAllowedError' || fallbackErr.name === 'PermissionDeniedError' || fallbackErr.message?.toLowerCase().includes('permission') || fallbackErr.message?.toLowerCase().includes('denied');
-        if (isFallbackPermissionDenied) {
-          console.warn("Erreur fallback getUserMedia (Accès refusé):", fallbackErr.message || fallbackErr);
-        } else {
-          console.error("Erreur fallback getUserMedia:", fallbackErr);
-        }
         if (window.DashboardService) {
-          window.DashboardService.showNotification("Accès caméra refusé. Mode capture photo natif activé.", "warning");
+          window.DashboardService.showNotification("Accès caméra refusé ou indisponible. Mode natif activé.", "warning");
         }
         this.stopCameraStream();
         this.triggerNativeCamera();
@@ -522,6 +574,91 @@ export const InspectionService = {
       modal.classList.add('hidden');
       modal.classList.remove('flex');
     }
+  },
+
+  async handleTapToFocus(event) {
+    const video = document.getElementById('ins_camera_video');
+    const indicator = document.getElementById('ins_camera_focus_indicator');
+    const feedback = document.getElementById('ins_camera_feedback_text');
+    if (!video) return;
+
+    // Get click/tap coordinates relative to the full viewport bounding rect
+    const rect = video.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+
+    // Reposition physical visual focus target
+    if (indicator) {
+      indicator.style.left = `${x - 32}px`;
+      indicator.style.top = `${y - 32}px`;
+      indicator.classList.remove('opacity-0', 'scale-150', 'border-yellow-400', 'border-emerald-500');
+      indicator.classList.add('opacity-100', 'scale-100', 'border-yellow-400');
+    }
+
+    if (feedback) {
+      feedback.innerText = "Mise au point...";
+      feedback.className = "text-center text-[10px] text-yellow-400 font-bold uppercase tracking-wider drop-shadow-md";
+    }
+
+    // Try applying point-of-interest focus constraints natively if device stream supports it
+    if (this.cameraStream) {
+      const track = this.cameraStream.getVideoTracks()[0];
+      if (track && typeof track.getCapabilities === 'function') {
+        try {
+          const caps = track.getCapabilities();
+          const focusConstraints = {};
+
+          if (caps.focusMode && caps.focusMode.includes('single')) {
+            focusConstraints.focusMode = 'single';
+          }
+          if (caps.pointsOfInterest) {
+            const normX = Math.max(0, Math.min(1, x / rect.width));
+            const normY = Math.max(0, Math.min(1, y / rect.height));
+            focusConstraints.pointsOfInterest = [{ x: normX, y: normY }];
+          }
+
+          if (Object.keys(focusConstraints).length > 0) {
+            await track.applyConstraints({ advanced: [focusConstraints] });
+          }
+        } catch (e) {
+          console.warn("Native camera point-of-interest assignment not active:", e);
+        }
+      }
+    }
+
+    // Simulate reactive physical lens searching effect (instant micro-blur & zoom spring)
+    video.classList.add('blur-[1px]', 'scale-[1.015]');
+
+    setTimeout(() => {
+      video.classList.remove('blur-[1px]', 'scale-[1.015]');
+
+      if (indicator) {
+        indicator.classList.remove('border-yellow-400');
+        indicator.classList.add('border-emerald-500');
+      }
+
+      if (feedback) {
+        feedback.innerText = "Mise au point OK";
+        feedback.className = "text-center text-[10px] text-emerald-400 font-bold uppercase tracking-wider drop-shadow-md";
+      }
+
+      if (navigator.vibrate) {
+        navigator.vibrate(30);
+      }
+
+      // Automatically transition focus indicator to hidden state
+      setTimeout(() => {
+        if (indicator) {
+          indicator.classList.remove('opacity-100');
+          indicator.classList.add('opacity-0', 'scale-150');
+        }
+        if (feedback) {
+          feedback.innerText = "Prêt pour le cliché";
+          feedback.className = "text-center text-[10px] text-slate-350 font-bold uppercase tracking-wider drop-shadow-md";
+        }
+      }, 1000);
+
+    }, 350);
   },
 
   async switchCamera() {
@@ -589,15 +726,23 @@ export const InspectionService = {
   initSignaturePad() {
     const canvas = document.getElementById('ins_sig_canvas');
     if (!canvas) return;
-    const ctx = canvas.getContext('2d');
+
+    // Clone to strip existing event listeners and avoid duplicates
+    const cloned = canvas.cloneNode(true);
+    canvas.replaceWith(cloned);
+
+    // Context must be obtained from the active in-DOM cloned element
+    const ctx = cloned.getContext('2d');
     
     const dpr = window.devicePixelRatio || 1;
-    const rect = canvas.getBoundingClientRect();
-    canvas.width = rect.width * dpr;
-    canvas.height = rect.height * dpr;
+    const rect = cloned.getBoundingClientRect();
+    cloned.width = rect.width * dpr;
+    cloned.height = rect.height * dpr;
     ctx.scale(dpr, dpr);
     
-    ctx.strokeStyle = '#6366f1';
+    // Set contrast stroke colors
+    const isDark = document.documentElement.classList.contains('dark');
+    ctx.strokeStyle = isDark ? '#ffffff' : '#0f172a';
     ctx.lineWidth = 3;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
@@ -609,7 +754,7 @@ export const InspectionService = {
     const placeholder = document.getElementById('ins_sig_placeholder');
     
     const getXY = (e) => {
-      const r = canvas.getBoundingClientRect();
+      const r = cloned.getBoundingClientRect();
       if (e.touches && e.touches[0]) {
         return {
           x: e.touches[0].clientX - r.left,
@@ -645,19 +790,12 @@ export const InspectionService = {
     const stopDraw = () => {
       if (drawing) {
         drawing = false;
-        const tempCanvas = document.createElement('canvas');
-        tempCanvas.width = rect.width;
-        tempCanvas.height = rect.height;
-        const tempCtx = tempCanvas.getContext('2d');
-        tempCtx.drawImage(canvas, 0, 0, rect.width, rect.height);
-        this.signatureData = tempCanvas.toDataURL();
+        // Directly save the drawing as high-quality data URL
+        this.signatureData = cloned.toDataURL();
         this.signatureCaptured = true;
       }
     };
 
-    const cloned = canvas.cloneNode(true);
-    canvas.replaceWith(cloned);
-    
     cloned.addEventListener('mousedown', startDraw);
     cloned.addEventListener('mousemove', draw);
     cloned.addEventListener('mouseup', stopDraw);
@@ -1211,11 +1349,47 @@ export const InspectionService = {
   },
 
   viewDepositPhoto() {
+    if (!this.hasDepositReceipt) {
+      if (window.DashboardService) {
+        window.DashboardService.showNotification("Veuillez d'abord cocher 'Avec reçu ?' pour prendre une photo du reçu.", "info");
+      }
+      return;
+    }
     const url = this.depositReceiptPhoto;
     if (url) {
       this.openLightbox(url);
     } else {
       this.askPhotoSource('deposit_receipt');
+    }
+  },
+
+  toggleDepositReceipt(checked) {
+    this.hasDepositReceipt = checked;
+    
+    const chk = document.getElementById('ins_has_deposit_receipt');
+    if (chk) chk.checked = checked;
+
+    const depositContainer = document.getElementById('ins_deposit_receipt_container');
+    if (depositContainer) {
+      if (checked) {
+        depositContainer.classList.remove('opacity-40', 'cursor-not-allowed');
+        depositContainer.classList.add('cursor-pointer');
+      } else {
+        depositContainer.classList.add('opacity-40', 'cursor-not-allowed');
+        depositContainer.classList.remove('cursor-pointer');
+        
+        // Also clear the photo if it was set
+        this.depositReceiptPhoto = null;
+        const previewDeposit = document.getElementById('ins_preview_deposit_receipt');
+        const placeholderDeposit = document.getElementById('ins_placeholder_deposit_receipt');
+        if (previewDeposit) {
+          previewDeposit.src = '';
+          previewDeposit.classList.add('hidden');
+        }
+        if (placeholderDeposit) {
+          placeholderDeposit.classList.remove('hidden');
+        }
+      }
     }
   },
 
@@ -1492,6 +1666,95 @@ export const InspectionService = {
     }
 
     if (window.lucide) window.lucide.createIcons();
+    this.updateRadarCharts();
+  },
+
+  updateRadarCharts() {
+    if (typeof Chart === 'undefined') return;
+
+    const zonesLabels = ["Avant", "Arrière", "Côtés", "Toit", "Vitrage", "Intérieur", "Jantes"];
+    
+    const countDamages = (damagesArr) => {
+      const counts = [0, 0, 0, 0, 0, 0, 0];
+      damagesArr.forEach(d => {
+        const zoneLower = (d.zone || '').toLowerCase();
+        if (zoneLower.includes("avant")) counts[0]++;
+        else if (zoneLower.includes("arrière")) counts[1]++;
+        else if (zoneLower.includes("côté") || zoneLower.includes("flanc") || zoneLower.includes("droit") || zoneLower.includes("gauche")) counts[2]++;
+        else if (zoneLower.includes("toit") || zoneLower.includes("pavillon") || zoneLower.includes("capot")) counts[3]++;
+        else if (zoneLower.includes("vitrage") || zoneLower.includes("pare-brise")) counts[4]++;
+        else if (zoneLower.includes("intérieur") || zoneLower.includes("habitacle")) counts[5]++;
+        else if (zoneLower.includes("jantes") || zoneLower.includes("pneus")) counts[6]++;
+        else counts[0]++; // fallback
+      });
+      return counts;
+    };
+
+    // DEPARTURE
+    const depDamages = this.damages.filter(d => d.stage === 'departure');
+    const depContainer = document.getElementById('ins_departure_radar_container');
+    if (depDamages.length > 0 && depContainer) {
+      depContainer.classList.remove('hidden');
+      const ctx = document.getElementById('ins_departure_radar_chart');
+      if (ctx) {
+        if (this._depRadarChart) this._depRadarChart.destroy();
+        this._depRadarChart = new Chart(ctx, {
+          type: 'radar',
+          data: {
+            labels: zonesLabels,
+            datasets: [{
+              label: 'Dommages Départ',
+              data: countDamages(depDamages),
+              backgroundColor: 'rgba(99, 102, 241, 0.2)',
+              borderColor: 'rgba(99, 102, 241, 1)',
+              pointBackgroundColor: 'rgba(99, 102, 241, 1)',
+              borderWidth: 2
+            }]
+          },
+          options: {
+            scales: { r: { beginAtZero: true, ticks: { display: false, stepSize: 1 } } },
+            plugins: { legend: { display: false } },
+            responsive: true,
+            maintainAspectRatio: false
+          }
+        });
+      }
+    } else if (depContainer) {
+      depContainer.classList.add('hidden');
+    }
+
+    // ARRIVAL
+    const arrDamages = this.damages.filter(d => d.stage === 'arrival');
+    const arrContainer = document.getElementById('ins_arrival_radar_container');
+    if (arrDamages.length > 0 && arrContainer) {
+      arrContainer.classList.remove('hidden');
+      const ctx = document.getElementById('ins_arrival_radar_chart');
+      if (ctx) {
+        if (this._arrRadarChart) this._arrRadarChart.destroy();
+        this._arrRadarChart = new Chart(ctx, {
+          type: 'radar',
+          data: {
+            labels: zonesLabels,
+            datasets: [{
+              label: 'Nouveaux Dommages',
+              data: countDamages(arrDamages),
+              backgroundColor: 'rgba(244, 63, 94, 0.2)',
+              borderColor: 'rgba(244, 63, 94, 1)',
+              pointBackgroundColor: 'rgba(244, 63, 94, 1)',
+              borderWidth: 2
+            }]
+          },
+          options: {
+            scales: { r: { beginAtZero: true, ticks: { display: false, stepSize: 1 } } },
+            plugins: { legend: { display: false } },
+            responsive: true,
+            maintainAspectRatio: false
+          }
+        });
+      }
+    } else if (arrContainer) {
+      arrContainer.classList.add('hidden');
+    }
   },
 
   renderSummary() {
@@ -1884,7 +2147,9 @@ export const InspectionService = {
       });
 
       if (!reportRes.ok) {
-        throw new Error("Failed to upload report to Drive");
+        let errObj = {};
+        try { errObj = await reportRes.json(); } catch(e) {}
+        throw new Error(errObj.error || "Failed to upload report to Drive");
       }
 
       // 2. Upload photo files
@@ -2046,7 +2311,7 @@ export const InspectionService = {
     } catch (err) {
       console.error("Erreur d'enregistrement Google Drive:", err);
       if (window.DashboardService) {
-        window.DashboardService.showNotification("Échec de la sauvegarde Google Drive.", "error");
+        window.DashboardService.showNotification("Échec de la sauvegarde Google Drive: " + (err.message || "Erreur inconnue"), "error");
       }
       if (driveBtn) {
         driveBtn.disabled = false;

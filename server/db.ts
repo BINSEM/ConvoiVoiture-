@@ -294,8 +294,8 @@ export const DbService = {
   createSession(username: string): string {
     const db = loadDb();
     const token = crypto.randomBytes(32).toString('hex');
-    // Session expires in 4 hours
-    const expiresAt = Date.now() + 4 * 60 * 60 * 1000;
+    // Session expires in 365 days (until manual sign out)
+    const expiresAt = Date.now() + 365 * 24 * 60 * 60 * 1000;
 
     // Clean up older sessions for this user to avoid leak
     db.sessions = db.sessions.filter(s => s.username !== username && s.expiresAt > Date.now());

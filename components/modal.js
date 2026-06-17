@@ -184,6 +184,18 @@ export const ModalService = {
    * Initialise les écouteurs de calculs automatiques sur le formulaire de mission
    */
   initFormCalculations() {
+    const form = document.getElementById('missionForm');
+    if (form && !form.dataset.draftListenerAttached) {
+      form.addEventListener('input', () => {
+         if (this.activeMissionId == null) {
+           const formData = new FormData(form);
+           const data = Object.fromEntries(formData.entries());
+           localStorage.setItem('mission_form_draft', JSON.stringify(data));
+         }
+      });
+      form.dataset.draftListenerAttached = 'true';
+    }
+
     const inputGain = document.getElementById('m_gain');
     const inputCarburant = document.getElementById('m_carburant');
     const inputPeage = document.getElementById('m_peage');
@@ -297,10 +309,30 @@ export const ModalService = {
     const title = document.getElementById('modalTitle');
     if (title) title.innerText = 'Ajouter une Mission de Convoyage';
 
-    // Renseigner la date du jour par défaut
-    const inputDate = document.getElementById('m_date');
-    if (inputDate) {
-      inputDate.value = new Date().toISOString().slice(0, 10);
+    let hasDraft = false;
+    const draftStr = localStorage.getItem('mission_form_draft');
+    if (draftStr && form) {
+      try {
+        const data = JSON.parse(draftStr);
+        if (data && Object.keys(data).length > 0) {
+           for (const [key, value] of Object.entries(data)) {
+              if (form.elements[key]) {
+                  form.elements[key].value = value;
+                  hasDraft = true;
+              }
+           }
+        }
+      } catch (e) {
+        console.warn('Failed to parse mission form draft', e);
+      }
+    }
+
+    if (!hasDraft) {
+      // Renseigner la date du jour par défaut
+      const inputDate = document.getElementById('m_date');
+      if (inputDate) {
+        inputDate.value = new Date().toISOString().slice(0, 10);
+      }
     }
 
     const modal = document.getElementById('missionModal');

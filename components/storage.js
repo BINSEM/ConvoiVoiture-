@@ -37,9 +37,12 @@ export const StorageService = {
    */
   async loadMissions() {
     try {
-      const stored = localStorage.getItem(STORAGE_KEYS.MISSIONS);
-      if (stored) {
-        return JSON.parse(stored);
+      if (window.localforage) {
+        const stored = await window.localforage.getItem(STORAGE_KEYS.MISSIONS);
+        if (stored) return stored;
+      } else {
+        const stored = localStorage.getItem(STORAGE_KEYS.MISSIONS);
+        if (stored) return JSON.parse(stored);
       }
     } catch (error) {
       console.error('Erreur lors du chargement des missions:', error);
@@ -51,11 +54,20 @@ export const StorageService = {
    * Sauvegarde les missions dans le stockage local
    * @param {Array} m - Liste des missions
    */
-  saveMissions(m) {
+  async saveMissions(m) {
     try {
-      localStorage.setItem(STORAGE_KEYS.MISSIONS, JSON.stringify(m));
+      if (window.localforage) {
+        await window.localforage.setItem(STORAGE_KEYS.MISSIONS, m);
+      } else {
+        localStorage.setItem(STORAGE_KEYS.MISSIONS, JSON.stringify(m));
+      }
       return true;
     } catch (error) {
+      if (error && error.name === 'QuotaExceededError') {
+        if (window.DashboardService) {
+           window.DashboardService.showNotification("Stockage saturé. Impossible d'enregistrer la mission avec les photos. Veuillez synchroniser puis vider le cache.", "error");
+        }
+      }
       console.error('Erreur lors de la sauvegarde des missions:', error);
       return false;
     }

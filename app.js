@@ -21,10 +21,10 @@ window.ExportService = ExportService;
 
 // Intercepteur global Fetch pour injecter l'ID de session RBAC (X-Session-Token) dans toutes les requêtes
 const originalFetch = window.fetch;
-const customFetch = function(url, options = {}) {
+const customFetch = async function(url, options = {}) {
   const token = localStorage.getItem('rbac_session_token');
   if (token) {
-    document.cookie = "session_token=" + token + "; Path=/; Max-Age=" + (4 * 60 * 60) + "; SameSite=Lax";
+    document.cookie = "session_token=" + token + "; Path=/; Max-Age=" + (365 * 24 * 60 * 60) + "; SameSite=Lax";
     options.headers = options.headers || {};
     if (!(options.headers instanceof Headers)) {
       options.headers['X-Session-Token'] = token;
@@ -32,7 +32,20 @@ const customFetch = function(url, options = {}) {
       options.headers.set('X-Session-Token', token);
     }
   }
-  return originalFetch(url, options);
+  const response = await originalFetch(url, options);
+  if (response.status === 401 && !url.includes('/api/auth/login')) {
+    // Session invalide, déconnexion forcée
+    localStorage.removeItem('rbac_session_token');
+    document.cookie = "session_token=; Path=/; Max-Age=0; SameSite=Lax";
+    if (window.DashboardService && window.DashboardService.showNotification) {
+      window.DashboardService.showNotification("Session expirée. Veuillez vous reconnecter.", "error");
+    }
+    // Délai court avant rechargement
+    setTimeout(() => {
+      window.location.reload();
+    }, 1500);
+  }
+  return response;
 };
 
 try {
@@ -484,11 +497,17 @@ class ConvoyageApp {
     }
 
     // 1. Cacher toutes les sections
-    const sections = ['section-dashboard', 'section-missions', 'section-stats', 'section-settings', 'section-planner', 'section-admin-users', 'section-admin-logs', 'section-account', 'section-inspection'];
+    const sections = ['section-dashboard', 'section-missions', 'section-stats', 'section-settings', 'section-planner', 'section-admin-users', 'section-admin-logs', 'section-account', 'section-inspection', 'section-drive-synthesis'];
     sections.forEach(s => {
       const el = document.getElementById(s);
       if (el) el.classList.add('hidden');
     });
+
+    if (viewId === 'drive-synthesis') {
+      if (typeof this.loadDriveSynthesis === 'function') {
+        this.loadDriveSynthesis();
+      }
+    }
 
     // Load profile specific info if viewing Account
     if (viewId === 'account' && this.currentUser) {
@@ -808,13 +827,17 @@ class ConvoyageApp {
   /**
    * Sauvegarde l'état actuel de la liste de toutes les missions dans le stockage persistant local
    */
-  saveMissions() {
-    const saved = StorageService.saveMissions(this.missions);
+  async saveMissions() {
+    const saved = await StorageService.saveMissions(this.missions);
     
     // In creating or updating any mission, write/save it locally to server's `/data/sample-data.json` file
+    const pushHeaders = { 'Content-Type': 'application/json' };
+    if (this.googleDriveToken) {
+       pushHeaders['Authorization'] = `Bearer ${this.googleDriveToken}`;
+    }
     fetch('/api/missions/save-local', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: pushHeaders,
       body: JSON.stringify({ missions: this.missions })
     }).catch(err => console.error("Error saving local copy to backend:", err));
 
@@ -888,6 +911,7 @@ class ConvoyageApp {
       }
     } else {
       // Mode NOUVELLE MISSION
+      localStorage.removeItem('mission_form_draft');
       const prefix = `conv-${new Date(missionData.date).getFullYear()}`;
       const randomSuf = Math.floor(100 + Math.random() * 900);
       missionData.id = `${prefix}-${randomSuf}`;
@@ -2193,6 +2217,62 @@ class ConvoyageApp {
       });
     }
 
+    // ------------------- SYNTHESE GOOGLE DRIVE LISTENERS -------------------
+    const fSynthMonth = document.getElementById('synthesis_month_select');
+    if (fSynthMonth) {
+      fSynthMonth.addEventListener('change', () => {
+        const val = fSynthMonth.value;
+        if (val) this.fetchMonthlySynthesis(val);
+      });
+    }
+
+    const btnSynthRefresh = document.getElementById('btn_synthesis_refresh');
+    if (btnSynthRefresh) {
+      btnSynthRefresh.addEventListener('click', async () => {
+        const val = fSynthMonth ? fSynthMonth.value : '';
+        if (val) {
+          const origText = btnSynthRefresh.innerHTML;
+          btnSynthRefresh.innerHTML = `<i data-lucide="refresh-cw" class="w-3.5 h-3.5 animate-spin"></i> Chargement...`;
+          btnSynthRefresh.disabled = true;
+          if (window.lucide) window.lucide.createIcons();
+          await this.fetchMonthlySynthesis(val);
+          btnSynthRefresh.innerHTML = origText;
+          btnSynthRefresh.disabled = false;
+          if (window.lucide) window.lucide.createIcons();
+        } else {
+          DashboardService.showNotification("Veuillez d'abord sélectionner un mois.", "info");
+        }
+      });
+    }
+
+    const btnSynthSyncAll = document.getElementById('btn_synthesis_sync_all');
+    if (btnSynthSyncAll) {
+      btnSynthSyncAll.addEventListener('click', async () => {
+        const origText = btnSynthSyncAll.innerHTML;
+        btnSynthSyncAll.innerHTML = `<i data-lucide="refresh-cw" class="w-3.5 h-3.5 animate-spin"></i> Synchro...`;
+        btnSynthSyncAll.disabled = true;
+        if (window.lucide) window.lucide.createIcons();
+        await this.runBidirectionalSync();
+        btnSynthSyncAll.innerHTML = origText;
+        btnSynthSyncAll.disabled = false;
+        if (window.lucide) window.lucide.createIcons();
+      });
+    }
+
+    const btnSynthExportPdf = document.getElementById('btn_synth_export_pdf');
+    if (btnSynthExportPdf) {
+      btnSynthExportPdf.addEventListener('click', () => {
+        this.exportSynthesisPDF();
+      });
+    }
+
+    const btnSynthExportExcel = document.getElementById('btn_synth_export_excel');
+    if (btnSynthExportExcel) {
+      btnSynthExportExcel.addEventListener('click', () => {
+        this.exportSynthesisExcel();
+      });
+    }
+
     // Vérifier si un jeton d'accès est déjà configuré à l'initialisation
     if (window.googleDriveAccessToken) {
       this.googleDriveToken = window.googleDriveAccessToken;
@@ -3016,6 +3096,790 @@ class ConvoyageApp {
     setTimeout(() => {
       tableBody.style.opacity = '1';
     }, 50);
+  }
+
+  // ------------------------- GOOGLE DRIVE SYNTHESIS METHODS -------------------------
+  /**
+   * Load available monthly folders and files from Google Drive
+   */
+  async loadDriveSynthesis() {
+    const fSynthMonth = document.getElementById('synthesis_month_select');
+    const container = document.getElementById('synthesis_dashboard_container');
+    const syncDateEl = document.getElementById('synthesis_last_sync_date');
+    const activeFileEl = document.getElementById('synthesis_active_file_label');
+
+    if (!fSynthMonth || !container) return;
+
+    // Reset default text
+    fSynthMonth.innerHTML = `<option value="">Chargement...</option>`;
+
+    if (!this.googleDriveToken) {
+      container.innerHTML = `
+        <div class="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/60 p-6 rounded-2xl text-center space-y-4">
+          <div class="inline-flex p-3 bg-amber-100 dark:bg-amber-950/50 text-amber-600 rounded-xl">
+            <i data-lucide="circle-alert" class="w-8 h-8"></i>
+          </div>
+          <h3 class="text-base font-black text-amber-900 dark:text-amber-100 mt-2">Google Drive non connecté</h3>
+          <p class="text-xs text-amber-700 dark:text-amber-300 max-w-md mx-auto">Veuillez d'abord connecter votre compte Google Drive dans l'onglet <strong>Mon Compte & Sécurité</strong> pour accéder à la synthèse globale d'activité.</p>
+          <button class="btn btn-sm bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl px-4 py-2 cursor-pointer" onclick="window.app ? window.app.switchView('account') : null">
+            Se connecter à Google Drive
+          </button>
+        </div>
+      `;
+      if (syncDateEl) syncDateEl.innerText = "Dernière synchro : non connecté";
+      if (activeFileEl) activeFileEl.innerText = "Fichier : aucun";
+      if (window.lucide) window.lucide.createIcons();
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/drive/synthesis/months', {
+        headers: {
+          'Authorization': `Bearer ${this.googleDriveToken}`
+        }
+      });
+      const data = await response.json();
+
+      if (!data.success) {
+        throw new Error(data.error || "Failed to fetch months");
+      }
+
+      const months = data.months || [];
+      if (months.length === 0) {
+        container.innerHTML = `
+          <div class="bg-indigo-50 dark:bg-slate-900/40 border border-indigo-150 dark:border-slate-800 p-8 rounded-2xl text-center space-y-4">
+            <div class="inline-flex p-3 bg-indigo-100 dark:bg-slate-800/80 text-blue-500 rounded-xl">
+              <i data-lucide="cloud-off" class="w-8 h-8"></i>
+            </div>
+            <h3 class="text-base font-black text-indigo-900 dark:text-white mt-2">Aucun fichier de sauvegarde mensuel trouvé</h3>
+            <p class="text-xs text-indigo-600 dark:text-slate-400 max-w-md mx-auto">Aucun rapport ou fichier mensuel n'a été synchronisé sur votre Google Drive pour le moment. Lancer une synchronisation globale pour initialiser l'arborescence.</p>
+            <button id="btn_synth_init_sync" class="btn btn-sm bg-blue-600 hover:bg-blue-750 text-white font-bold rounded-xl px-5 py-2 cursor-pointer">
+              Lancer la Synchro Initiale
+            </button>
+          </div>
+        `;
+        
+        const btnInit = document.getElementById('btn_synth_init_sync');
+        if (btnInit) {
+          btnInit.addEventListener('click', () => {
+            document.getElementById('btn_synthesis_sync_all').click();
+          });
+        }
+
+        if (syncDateEl) syncDateEl.innerText = "Dernière synchro : initialisation requise";
+        if (window.lucide) window.lucide.createIcons();
+        return;
+      }
+
+      // Populate dropdown list
+      let opts = "";
+      months.forEach((m) => {
+        opts += `<option value="${m.key}">${m.label}</option>`;
+      });
+      fSynthMonth.innerHTML = opts;
+
+      // Automatically fetch statistics for the newest month
+      const newestMonth = months[0].key;
+      await this.fetchMonthlySynthesis(newestMonth);
+    } catch (err) {
+      console.error("Error loading synthesis months:", err);
+      DashboardService.showNotification("Échec du chargement des périodes de synthèse Google Drive.", "danger");
+    }
+  }
+
+  /**
+   * Download specific monthly missions file and build summary graphs/reports
+   */
+  async fetchMonthlySynthesis(yearMonth) {
+    const container = document.getElementById('synthesis_dashboard_container');
+    const syncDateEl = document.getElementById('synthesis_last_sync_date');
+    const activeFileEl = document.getElementById('synthesis_active_file_label');
+
+    if (!container || !this.googleDriveToken) return;
+
+    // Loading layout spinner
+    const spinnerHtml = `
+      <div class="py-16 text-center space-y-3">
+        <div class="inline-block w-8 h-8 rounded-full border-4 border-indigo-505 border-t-transparent animate-spin"></div>
+        <p class="text-xs text-slate-400 font-bold tracking-wide font-sans animate-pulse">Récupération du fichier missions-${yearMonth}.json depuis Google Drive...</p>
+      </div>
+    `;
+    const origContainerHtml = container.innerHTML;
+    container.innerHTML = spinnerHtml;
+
+    try {
+      const res = await fetch(`/api/drive/synthesis/month/${yearMonth}`, {
+        headers: {
+          'Authorization': `Bearer ${this.googleDriveToken}`
+        }
+      });
+      const data = await res.json();
+
+      if (!data.success) {
+        throw new Error(data.error || "Failed to download synthesis JSON");
+      }
+
+      const missions = data.missions || [];
+      this.synthesisMissionsList = missions;
+
+      // If no missions, show empty state
+      if (missions.length === 0) {
+        container.innerHTML = `
+          <div class="text-center py-16 bg-slate-50 dark:bg-slate-900 rounded-2xl border border-slate-205 dark:border-slate-800">
+            <i data-lucide="table-properties" class="w-10 h-10 text-slate-400 mx-auto block mb-2"></i>
+            <h4 class="font-bold text-slate-700 dark:text-white">Aucune donnée disponible</h4>
+            <p class="text-xs text-slate-405 mt-1">Le fichier mensuel de cette période est actuellement vide.</p>
+          </div>
+        `;
+        if (activeFileEl) activeFileEl.innerText = `Fichier: missions-${yearMonth}.json`;
+        if (window.lucide) window.lucide.createIcons();
+        return;
+      }
+
+      // Re-populate original view container structure first
+      container.innerHTML = `
+        <!-- KPI GRID -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <!-- KPI 1 -->
+          <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-center gap-4">
+            <div class="p-3 bg-blue-50 dark:bg-blue-950/30 text-blue-500 rounded-xl">
+              <i data-lucide="route" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <span class="text-[10px] text-slate-400 uppercase tracking-widest font-black block">Missions Totales</span>
+              <h3 class="text-xl font-black text-slate-950 dark:text-white leading-none mt-0.5" id="synth_kpi_missions">0</h3>
+              <p class="text-[10px] text-slate-500 mt-1 font-semibold" id="synth_kpi_missions_sub">0 Terminées / 0 Planifiées</p>
+            </div>
+          </div>
+
+          <!-- KPI 2 -->
+          <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-center gap-4">
+            <div class="p-3 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-550 rounded-xl">
+              <i data-lucide="banknote" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <span class="text-[10px] text-slate-400 uppercase tracking-widest font-black block">Chiffre d'Affaires</span>
+              <h3 class="text-xl font-black text-emerald-600 dark:text-emerald-450 leading-none mt-0.5" id="synth_kpi_ca">0,00 €</h3>
+              <p class="text-[10px] text-slate-500 mt-1 font-semibold" id="synth_kpi_ca_sub">Chiffre d'affaires brut</p>
+            </div>
+          </div>
+
+          <!-- KPI 3 -->
+          <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-center gap-4">
+            <div class="p-3 bg-rose-50 dark:bg-rose-950/30 text-rose-550 rounded-xl">
+              <i data-lucide="receipt-text" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <span class="text-[10px] text-slate-400 uppercase tracking-widest font-black block">Frais Totaux (Net)</span>
+              <h3 class="text-xl font-black text-rose-600 dark:text-rose-450 leading-none mt-0.5" id="synth_kpi_frais">0,00 €</h3>
+              <p class="text-[10px] text-slate-500 mt-1 font-semibold" id="synth_kpi_frais_sub">Frais réels ajustés</p>
+            </div>
+          </div>
+
+          <!-- KPI 4 -->
+          <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-center gap-4">
+            <div class="p-3 bg-violet-50 dark:bg-violet-950/30 text-violet-550 rounded-xl">
+              <i data-lucide="sparkles" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <span class="text-[10px] text-slate-400 uppercase tracking-widest font-black block">Marge Opérationnelle</span>
+              <h3 class="text-xl font-black text-violet-650 dark:text-indigo-405 leading-none mt-0.5" id="synth_kpi_margin">0,00 €</h3>
+              <p class="text-[10px] text-slate-500 mt-1 font-semibold" id="synth_kpi_margin_sub">Marge nette estimée</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- ANALYSIS GRID FIRST ROW -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-4">
+            <h3 class="text-sm font-black uppercase text-slate-800 dark:text-slate-100 tracking-wider flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-2">
+              <i data-lucide="workflow" class="w-4 h-4 text-slate-400"></i>
+              Statut des Missions & Taux de Réussite
+            </h3>
+            <div id="synth_div_status_bars" class="space-y-4"></div>
+          </div>
+
+          <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-4">
+            <h3 class="text-sm font-black uppercase text-slate-800 dark:text-slate-100 tracking-wider flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-2">
+              <i data-lucide="layers" class="w-4 h-4 text-slate-400"></i>
+              Performance par Plateforme / Client
+            </h3>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr class="border-b border-slate-100 dark:border-slate-800 text-slate-450 uppercase text-[10px] font-bold tracking-wider">
+                    <th class="py-2.5 font-bold">Plateforme</th>
+                    <th class="py-2.5 font-bold text-center">Courses</th>
+                    <th class="py-2.5 font-bold text-right">Revenu Brut</th>
+                    <th class="py-2.5 font-bold text-right font-mono">Part (%)</th>
+                  </tr>
+                </thead>
+                <tbody id="synth_tbody_platforms" class="divide-y divide-slate-100/60 dark:divide-slate-800/65 font-medium text-slate-700 dark:text-slate-350"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ANALYSIS GRID SECOND ROW -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-4">
+            <h3 class="text-sm font-black uppercase text-slate-800 dark:text-slate-100 tracking-wider flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-2">
+              <i data-lucide="users" class="w-4 h-4 text-slate-400"></i>
+              Contribution des Convoyeurs / Chauffeurs
+            </h3>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr class="border-b border-slate-100 dark:border-slate-800 text-slate-450 uppercase text-[10px] font-bold tracking-wider">
+                    <th class="py-2.5 font-bold">Nom du Convoyeur</th>
+                    <th class="py-2.5 font-bold text-center">Missions</th>
+                    <th class="py-2.5 font-bold text-center">Kilomètres</th>
+                    <th class="py-2.5 font-bold text-right">CA Généré</th>
+                  </tr>
+                </thead>
+                <tbody id="synth_tbody_drivers" class="divide-y divide-slate-100/60 dark:divide-slate-800/65 font-medium text-slate-700 dark:text-slate-350"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-4">
+            <h3 class="text-sm font-black uppercase text-slate-800 dark:text-slate-100 tracking-wider flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-2">
+              <i data-lucide="receipt" class="w-4 h-4 text-slate-400"></i>
+              Analyse des Frais Professionnels
+            </h3>
+            <div id="synth_div_expenses_bars" class="space-y-4"></div>
+          </div>
+        </div>
+
+        <!-- DETAIL LIST TABLE -->
+        <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-4">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-4">
+            <h3 class="text-sm font-black uppercase text-slate-800 dark:text-slate-100 tracking-wider flex items-center gap-2">
+              <i data-lucide="table" class="w-4 h-4 text-slate-400"></i>
+              Détail des Missions Importées
+            </h3>
+            <div class="flex flex-wrap items-center gap-2">
+              <button id="btn_synth_export_pdf_inner" class="btn btn-sm bg-rose-50 hover:bg-rose-105 text-rose-600 dark:bg-rose-950/40 dark:hover:bg-rose-900/30 dark:text-rose-400 border border-rose-150 dark:border-rose-900/80 rounded-xl font-bold flex items-center gap-1.5 py-1.5 px-3 cursor-pointer">
+                <i data-lucide="file-text" class="w-3.5 h-3.5"></i>
+                Exporter PDF
+              </button>
+              <button id="btn_synth_export_excel_inner" class="btn btn-sm bg-blue-50 hover:bg-blue-105 text-blue-600 dark:bg-blue-950/40 dark:hover:bg-blue-900/30 dark:text-blue-450 border border-blue-150 dark:border-blue-900/80 rounded-xl font-bold flex items-center gap-1.5 py-1.5 px-3 cursor-pointer">
+                <i data-lucide="file-spreadsheet" class="w-3.5 h-3.5"></i>
+                Exporter Excel
+              </button>
+            </div>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-[11px]">
+              <thead>
+                <tr class="border-b border-slate-100 dark:border-slate-800 text-slate-450 uppercase text-[9px] font-bold tracking-wider">
+                  <th class="py-2.5 font-bold">Date</th>
+                  <th class="py-2.5 font-bold">Véhicule</th>
+                  <th class="py-2.5 font-bold">Immatriculation</th>
+                  <th class="py-2.5 font-bold">Trajet</th>
+                  <th class="py-2.5 font-bold text-center">KM</th>
+                  <th class="py-2.5 font-bold text-center">Plateforme</th>
+                  <th class="py-2.5 font-bold text-center">Statut</th>
+                  <th class="py-2.5 font-bold text-right">Gain</th>
+                </tr>
+              </thead>
+              <tbody id="synth_tbody_missions_list" class="divide-y divide-slate-100/60 dark:divide-slate-800/65 font-medium text-slate-700 dark:text-slate-350"></tbody>
+            </table>
+          </div>
+        </div>
+      `;
+
+      // Active print actions in cards too
+      document.getElementById('btn_synth_export_pdf_inner').addEventListener('click', () => this.exportSynthesisPDF());
+      document.getElementById('btn_synth_export_excel_inner').addEventListener('click', () => this.exportSynthesisExcel());
+
+      // 1. CALCULATE FINANCIALS & STATISTICS
+      let totalMissions = missions.length;
+      let completedMissions = 0;
+      let plannedMissions = 0;
+      let totalCa = 0;
+      let grossExpenses = 0;
+      let netExpenses = 0;
+
+      let expFuel = 0;
+      let expTolls = 0;
+      let expCleaning = 0;
+      let expReturn = 0;
+
+      // Groupers
+      const platformAgg = {};
+      const driverAgg = {};
+      const statusAgg = {};
+
+      missions.forEach((m) => {
+        // Status counts
+        const status = m.statut || "Planifiée";
+        statusAgg[status] = (statusAgg[status] || 0) + 1;
+
+        if (status === "Terminée" || status === "Completed") {
+          completedMissions++;
+        } else {
+          plannedMissions++;
+        }
+
+        // Financials parsing
+        const gain = parseFloat(m.gain) || 0;
+        const fuel = parseFloat(m.carburant) || 0;
+        const toll = parseFloat(m.peage) || 0;
+        const cleaning = parseFloat(m.lavage) || 0;
+        const retTrip = parseFloat(m.prixRetour) || 0;
+        const kms = parseInt(m.kilometrage) || 0;
+
+        totalCa += gain;
+        
+        const sumExp = fuel + toll + cleaning + retTrip;
+        grossExpenses += sumExp;
+
+        expFuel += fuel;
+        expTolls += toll;
+        expCleaning += cleaning;
+        expReturn += retTrip;
+
+        const isReimbursed = m.fraisRembourses === "Oui" || m.fraisRembourses === "oui" || m.fraisRembourses === true;
+        if (!isReimbursed) {
+          netExpenses += sumExp;
+        }
+
+        // Platforms grouping
+        const plat = m.plateforme || "Direct / Autre";
+        if (!platformAgg[plat]) {
+          platformAgg[plat] = { count: 0, gain: 0 };
+        }
+        platformAgg[plat].count++;
+        platformAgg[plat].gain += gain;
+
+        // Driver grouping
+        const drName = m.driver || m.convoyeur || m.chauffeur || (this.currentUser ? this.currentUser.fullname : "Pilote Principal");
+        if (!driverAgg[drName]) {
+          driverAgg[drName] = { count: 0, kms: 0, gain: 0 };
+        }
+        driverAgg[drName].count++;
+        driverAgg[drName].kms += kms;
+        driverAgg[drName].gain += gain;
+      });
+
+      const netProfit = totalCa - netExpenses;
+
+      // 2. RENDER OVERALL KPIS
+      document.getElementById('synth_kpi_missions').innerText = totalMissions.toString();
+      document.getElementById('synth_kpi_missions_sub').innerText = `${completedMissions} Terminées / ${plannedMissions} Planifiées`;
+      document.getElementById('synth_kpi_ca').innerText = totalCa.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' });
+      document.getElementById('synth_kpi_frais').innerText = netExpenses.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' });
+      
+      const marginEl = document.getElementById('synth_kpi_margin');
+      marginEl.innerText = netProfit.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' });
+      const marginPct = totalCa > 0 ? ((netProfit / totalCa) * 100).toFixed(1) : "0.0";
+      document.getElementById('synth_kpi_margin_sub').innerText = `Marge opérationnelle de +${marginPct}%`;
+
+      // 3. RENDER STATUS PROGRESS BARS
+      let statusBarsHtml = "";
+      const statusColors = {
+        "Terminée": "bg-emerald-500",
+        "Completed": "bg-emerald-500",
+        "Planifiée": "bg-amber-450",
+        "En cours": "bg-blue-500",
+        "Annulée": "bg-rose-500"
+      };
+
+      Object.entries(statusAgg).forEach(([st, cnt]) => {
+        const pct = totalMissions > 0 ? ((cnt / totalMissions) * 100).toFixed(0) : "0";
+        const colorClass = statusColors[st] || "bg-slate-400";
+        statusBarsHtml += `
+          <div class="space-y-1">
+            <div class="flex items-center justify-between text-xs font-bold font-sans">
+              <span class="text-slate-600 dark:text-slate-300 flex items-center gap-1.5">
+                <span class="h-2 w-2 rounded-full ${colorClass}"></span>
+                ${st}
+              </span>
+              <span class="text-slate-800 dark:text-white font-mono">${cnt} courses (${pct}%)</span>
+            </div>
+            <div class="w-full h-2.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+              <div class="h-full rounded-full ${colorClass}" style="width: ${pct}%"></div>
+            </div>
+          </div>
+        `;
+      });
+      document.getElementById('synth_div_status_bars').innerHTML = statusBarsHtml;
+
+      // 4. RENDER PLATFORMS STATED TABLE
+      let platformRowsHtml = "";
+      const sortedPlatforms = Object.entries(platformAgg).sort((a, b) => b[1].gain - a[1].gain);
+      sortedPlatforms.forEach(([plat, stats]) => {
+        const platPct = totalCa > 0 ? ((stats.gain / totalCa) * 100).toFixed(1) : "0.0";
+        platformRowsHtml += `
+          <tr class="hover:bg-slate-50/40 dark:hover:bg-slate-850/40 transition-colors">
+            <td class="py-2.5 font-bold text-slate-800 dark:text-slate-200">${plat}</td>
+            <td class="py-2.5 text-center font-semibold text-slate-505 dark:text-slate-400">${stats.count}</td>
+            <td class="py-2.5 text-right font-bold text-slate-800 dark:text-white">${stats.gain.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}</td>
+            <td class="py-2.5 text-right font-mono text-slate-500 font-extrabold text-[10px]">${platPct}%</td>
+          </tr>
+        `;
+      });
+      document.getElementById('synth_tbody_platforms').innerHTML = platformRowsHtml;
+
+      // 5. RENDER DRIVERS ANALYSIS
+      let driverRowsHtml = "";
+      Object.entries(driverAgg).forEach(([name, stats]) => {
+        driverRowsHtml += `
+          <tr class="hover:bg-slate-50/40 dark:hover:bg-slate-850/40 transition-colors">
+            <td class="py-2.5 font-extrabold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+              <div class="w-5 h-5 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center font-mono text-[9px] uppercase font-black text-indigo-500">${name[0]}</div>
+              <span>${name}</span>
+            </td>
+            <td class="py-2.5 text-center font-semibold text-slate-505 dark:text-slate-400">${stats.count}</td>
+            <td class="py-2.5 text-center font-mono font-bold text-slate-800 dark:text-white">${stats.kms.toLocaleString()} km</td>
+            <td class="py-2.5 text-right font-bold text-emerald-650 dark:text-emerald-400">${stats.gain.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}</td>
+          </tr>
+        `;
+      });
+      document.getElementById('synth_tbody_drivers').innerHTML = driverRowsHtml;
+
+      // 6. RENDER FRAIS/EXPENSES PROGRESS BARS
+      const sumAllCat = expFuel + expTolls + expCleaning + expReturn;
+      const pctFuel = sumAllCat > 0 ? ((expFuel / sumAllCat) * 100).toFixed(0) : "0";
+      const pctToll = sumAllCat > 0 ? ((expTolls / sumAllCat) * 100).toFixed(0) : "0";
+      const pctCleaning = sumAllCat > 0 ? ((expCleaning / sumAllCat) * 100).toFixed(0) : "0";
+      const pctReturn = sumAllCat > 0 ? ((expReturn / sumAllCat) * 100).toFixed(0) : "0";
+
+      document.getElementById('synth_div_expenses_bars').innerHTML = `
+        <div class="space-y-3.5">
+          <!-- Carburant -->
+          <div class="space-y-1">
+            <div class="flex items-center justify-between text-xs font-bold">
+              <span class="text-slate-655 dark:text-slate-300">⛽ Carburant</span>
+              <span class="text-slate-800 dark:text-white font-mono">${expFuel.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })} (${pctFuel}%)</span>
+            </div>
+            <div class="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+              <div class="h-full bg-orange-500 rounded-full" style="width: ${pctFuel}%"></div>
+            </div>
+          </div>
+          <!-- Péage -->
+          <div class="space-y-1">
+            <div class="flex items-center justify-between text-xs font-bold">
+              <span class="text-slate-655 dark:text-slate-300">🛣️ Péage & Tunnel</span>
+              <span class="text-slate-800 dark:text-white font-mono">${expTolls.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })} (${pctToll}%)</span>
+            </div>
+            <div class="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+              <div class="h-full bg-blue-500 rounded-full" style="width: ${pctToll}%"></div>
+            </div>
+          </div>
+          <!-- Transport Retour -->
+          <div class="space-y-1">
+            <div class="flex items-center justify-between text-xs font-bold">
+              <span class="text-slate-655 dark:text-slate-300">🚊 Transport Retour (Train/Ter/Bus)</span>
+              <span class="text-slate-800 dark:text-white font-mono">${expReturn.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })} (${pctReturn}%)</span>
+            </div>
+            <div class="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+              <div class="h-full bg-indigo-500 rounded-full" style="width: ${pctReturn}%"></div>
+            </div>
+          </div>
+          <!-- Lavage -->
+          <div class="space-y-1">
+            <div class="flex items-center justify-between text-xs font-bold">
+              <span class="text-slate-655 dark:text-slate-300">🧼 Lavage & Entretien</span>
+              <span class="text-slate-800 dark:text-white font-mono">${expCleaning.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })} (${pctCleaning}%)</span>
+            </div>
+            <div class="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+              <div class="h-full bg-teal-500 rounded-full" style="width: ${pctCleaning}%"></div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      // 7. RENDER DETAILED LIST ROW ENTRIES
+      let listRowsHtml = "";
+      missions.forEach((m) => {
+        const date = m.date || "--";
+        const vehicle = m.vehicle || "Véhicule Inconnu";
+        const immat = m.immatriculation || "Non renv.";
+        const traj = `${m.depart || ''} ➔ ${m.destination || ''}`;
+        const kms = m.kilometrage || "0";
+        const plat = m.plateforme || "Autre";
+        const gain = parseFloat(m.gain) || 0;
+        
+        let stBadge = `<span class="px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-slate-105 text-slate-500 dark:bg-slate-800 dark:text-slate-400 border border-slate-205/30 uppercase tracking-wide inline-block">${m.statut || "Planifiée"}</span>`;
+        if (m.statut === "Terminée" || m.statut === "Completed") {
+          stBadge = `<span class="px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400 border border-emerald-150/40 uppercase tracking-wide inline-block">Terminée</span>`;
+        } else if (m.statut === "En cours") {
+          stBadge = `<span class="px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400 border border-blue-150/40 uppercase tracking-wide inline-block">En cours</span>`;
+        }
+
+        listRowsHtml += `
+          <tr class="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50/50 dark:hover:bg-slate-900/40 transition-colors">
+            <td class="py-2.5 font-mono font-bold text-slate-500 whitespace-nowrap">${date}</td>
+            <td class="py-2.5 font-black text-slate-900 dark:text-white">${vehicle}</td>
+            <td class="py-2.5 font-mono text-[10px] uppercase font-bold text-indigo-500">${immat}</td>
+            <td class="py-2.5 text-slate-600 dark:text-slate-300 font-medium truncate max-w-[140px]" title="${traj}">${traj}</td>
+            <td class="py-2.5 text-center font-mono font-bold text-slate-800 dark:text-white">${kms} km</td>
+            <td class="py-2.5 text-center"><span class="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 text-[10px] font-black rounded-md text-slate-500 uppercase">${plat}</span></td>
+            <td class="py-2.5 text-center">${stBadge}</td>
+            <td class="py-2.5 text-right font-black text-slate-950 dark:text-white">${gain.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}</td>
+          </tr>
+        `;
+      });
+      document.getElementById('synth_tbody_missions_list').innerHTML = listRowsHtml;
+
+      // 8. UPDATE SYNC METADATA BANNERS
+      if (syncDateEl) {
+        syncDateEl.innerText = `Dernière synchro : récupérée le ${new Date().toLocaleString('fr-FR')}`;
+      }
+      if (activeFileEl) {
+        activeFileEl.innerText = `Fichier : missions-${yearMonth}.json`;
+      }
+
+      if (window.lucide) window.lucide.createIcons();
+    } catch (err) {
+      console.error("Error downloading specific synthesis data:", err);
+      container.innerHTML = `
+        <div class="bg-rose-50 dark:bg-rose-950/20 border border-rose-250 dark:border-rose-900/40 p-6 rounded-2xl text-center space-y-2">
+          <i data-lucide="cloud-lightning" class="w-8 h-8 text-rose-500 mx-auto animate-bounce"></i>
+          <h4 class="font-bold text-rose-900 dark:text-rose-100">Fichier mensuel non synchronisé</h4>
+          <p class="text-xs text-rose-700 dark:text-rose-350">La sauvegarde de cette période n'a pas pu être récupérée depuis Google Drive. Cliquez sur "Actualiser" ou "Synchro Globale" pour réessayer.</p>
+        </div>
+      `;
+      if (window.lucide) window.lucide.createIcons();
+    }
+  }
+
+  /**
+   * Run manual bidirectional synchronization of database with all Drive month files
+   */
+  async runBidirectionalSync() {
+    if (!this.googleDriveToken) {
+      DashboardService.showNotification("Google Drive non connecté.", "warning");
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/drive/sync-all-months', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.googleDriveToken}`
+        }
+      });
+      const data = await response.json();
+
+      if (!data.success) {
+        throw new Error(data.error || "Sync API error");
+      }
+
+      // Update local cache
+      if (data.missions) {
+        this.missions = data.missions;
+        StorageService.saveMissions(this.missions);
+        this.populateClientFilters();
+        this.refreshUI();
+      }
+
+      DashboardService.showNotification("Synchronisation bidirectionnelle réussie avec Google Drive !", "success");
+      
+      // Reload monthly synthesis dropdown
+      await this.loadDriveSynthesis();
+    } catch (err) {
+      console.error("Error in bidirectional sync:", err);
+      DashboardService.showNotification("Échec de la synchronisation globale bidirectionnelle.", "danger");
+    }
+  }
+
+  /**
+   * Exports compiled month data as beautifully styled PDF report
+   */
+  exportSynthesisPDF() {
+    const activeMonthSelect = document.getElementById('synthesis_month_select');
+    const selectedMonthName = activeMonthSelect ? activeMonthSelect.options[activeMonthSelect.selectedIndex].text : 'Mensuel';
+    
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      DashboardService.showNotification("Veuillez autoriser les popups pour l'exportation.", "warning");
+      return;
+    }
+
+    const kpiMissions = document.getElementById('synth_kpi_missions').innerText;
+    const kpiMissionsSub = document.getElementById('synth_kpi_missions_sub').innerText;
+    const kpiCa = document.getElementById('synth_kpi_ca').innerText;
+    const kpiFrais = document.getElementById('synth_kpi_frais').innerText;
+    const kpiMargin = document.getElementById('synth_kpi_margin').innerText;
+    
+    const platformsHtml = document.getElementById('synth_tbody_platforms').innerHTML;
+    const driversHtml = document.getElementById('synth_tbody_drivers').innerHTML;
+    const missionsHtml = document.getElementById('synth_tbody_missions_list').innerHTML;
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Rapport d'Activité - ${selectedMonthName}</title>
+          <style>
+            body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #1e293b; padding: 40px; font-size: 11px; line-height: 1.5; }
+            .header { border-bottom: 3px solid #1e3a8a; padding-bottom: 12px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: flex-end; }
+            .title { font-size: 20px; font-weight: 900; margin: 0; color: #1e3a8a; text-transform: uppercase; letter-spacing: -0.5px; }
+            .subtitle { font-size: 10px; color: #64748b; font-family: monospace; margin-top: 5px; }
+            .card-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 30px; }
+            .card { border: 1px solid #e2e8f0; border-radius: 12px; padding: 15px; background: #f8fafc; box-shadow: inset 0 1px 2px rgba(0,0,0,0.02); }
+            .card-caption { font-size: 8px; text-transform: uppercase; color: #475569; font-weight: 800; letter-spacing: 0.8px; }
+            .card-value { font-size: 18px; font-weight: 900; margin-top: 6px; }
+            .card-sub { font-size: 9px; color: #64748b; margin-top: 3px; font-weight: 500; }
+            h3 { font-size: 13px; font-weight: 900; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px; margin-top: 25px; color: #0f172a; text-transform: uppercase; }
+            table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 10px; }
+            th { background: #f1f5f9; text-align: left; padding: 7px 10px; font-weight: 800; text-transform: uppercase; border-bottom: 1px solid #cbd5e1; color: #334155; font-size: 9px; }
+            td { padding: 7px 10px; border-bottom: 1px solid #e2e8f0; color: #334155; }
+            .footer { margin-top: 60px; border-top: 1px dashed #cbd5e1; padding-top: 15px; font-size: 8px; text-align: center; color: #94a3b8; font-family: monospace; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div>
+              <h1 class="title">Rapport d'Activité de Convoyage</h1>
+              <div class="subtitle">SYNTHÈSE GOOGLE DRIVE • PÉRIODE : ${selectedMonthName.toUpperCase()}</div>
+            </div>
+            <div style="text-align: right; font-size: 9px; font-family: monospace; color: #64748b;">GÉNÉRÉ LE ${new Date().toLocaleString('fr-FR')}</div>
+          </div>
+          
+          <div class="card-grid">
+            <div class="card">
+              <div class="card-caption">Missions Totales</div>
+              <div class="card-value">${kpiMissions}</div>
+              <div class="card-sub">${kpiMissionsSub}</div>
+            </div>
+            <div class="card">
+              <div class="card-caption">Chiffre d'Affaires Brut</div>
+              <div class="card-value" style="color: #15803d;">${kpiCa}</div>
+              <div class="card-sub">Prestations brutes facturées</div>
+            </div>
+            <div class="card">
+              <div class="card-caption">Frais Professionnels (Net)</div>
+              <div class="card-value" style="color: #b91c1c;">${kpiFrais}</div>
+              <div class="card-sub">Frais réels nets déduits</div>
+            </div>
+            <div class="card">
+              <div class="card-caption">Marge Opérationnelle Est.</div>
+              <div class="card-value" style="color: #4338ca;">${kpiMargin}</div>
+              <div class="card-sub">Marge d'exploitation nette</div>
+            </div>
+          </div>
+          
+          <h3>Performance par Client / Plateforme</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Plateforme / Client</th>
+                <th style="text-align: center;">Missions effectuées</th>
+                <th style="text-align: right;">Chiffre d'Affaires Brut</th>
+                <th style="text-align: right;">Part de marché (%)</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${platformsHtml}
+            </tbody>
+          </table>
+
+          <h3>Contribution des Convoyeurs</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Nom du Convoyeur / Chauffeur</th>
+                <th style="text-align: center;">Courses</th>
+                <th style="text-align: center;">Distance cumulée</th>
+                <th style="text-align: right;">CA Généré</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${driversHtml}
+            </tbody>
+          </table>
+
+          <div style="page-break-before: always;"></div>
+          
+          <div class="header" style="margin-bottom: 20px;">
+            <div>
+              <h1 class="title">Rapport d'Activité de Convoyage - Suite</h1>
+              <div class="subtitle">DÉTAIL DES TRANSACTIONS MENSUELLES</div>
+            </div>
+          </div>
+
+          <h3>Détail Complet des Missions</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Véhicule d'exploitation</th>
+                <th>Immatriculation</th>
+                <th>Trajet logistique</th>
+                <th style="text-align: center;">KM</th>
+                <th style="text-align: center;">Canal</th>
+                <th style="text-align: center;">Statut</th>
+                <th style="text-align: right;">Rendement (Prestation)</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${missionsHtml}
+            </tbody>
+          </table>
+          
+          <div class="footer">
+            SÉCURISÉ LOGISTIQUE PILOTE • CONVOY PRO EXPORT • ORIGIN: REMOTE CLOUD RUN ENGINE WITH DRIVE STORAGE v2
+          </div>
+        </body>
+      </html>
+    `);
+    
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => {
+      printWindow.print();
+      printWindow.close();
+    }, 450);
+  }
+
+  /**
+   * Genere un fichier CSV compatible Excel complet des missions du mois
+   */
+  exportSynthesisExcel() {
+    const activeMonthSelect = document.getElementById('synthesis_month_select');
+    const selectedMonthName = activeMonthSelect ? activeMonthSelect.options[activeMonthSelect.selectedIndex].text : 'Mensuel';
+    
+    const kpiMissions = document.getElementById('synth_kpi_missions').innerText;
+    const kpiCa = document.getElementById('synth_kpi_ca').innerText;
+    const kpiFrais = document.getElementById('synth_kpi_frais').innerText;
+    const kpiMargin = document.getElementById('synth_kpi_margin').innerText;
+    
+    let csvContext = `RAPPORT D'ACTIVITE - SYNTHESE GOOGLE DRIVE - ${selectedMonthName.toUpperCase()}\n`;
+    csvContext += `Genere le: ${new Date().toLocaleString('fr-FR')}\n\n`;
+    csvContext += `Missions Totales;Chiffre d'Affaires Brut;Frais Totaux (Net);Marge Operationnelle Est.\n`;
+    csvContext += `"${kpiMissions}";"${kpiCa}";"${kpiFrais}";"${kpiMargin}"\n\n`;
+    
+    csvContext += `DETAIL DES MISSIONS DE LA PERIODE\n`;
+    csvContext += `Date;Vehicule;Immatriculation;Depart;Destination;Kilometres;Plateforme;Statut;Gain (Prestations)\n`;
+    
+    const list = this.synthesisMissionsList || [];
+    list.forEach(m => {
+      const date = m.date || '';
+      const vehicle = m.vehicle || '';
+      const immat = m.immatriculation || '';
+      const dep = m.depart || '';
+      const dest = m.destination || '';
+      const km = m.kilometrage || '0';
+      const plat = m.plateforme || '';
+      const status = m.statut || '';
+      const gain = m.gain || '0';
+      csvContext += `"${date}";"${vehicle}";"${immat}";"${dep}";"${dest}";${km};"${plat}";"${status}";${gain}\n`;
+    });
+    
+    // Add BOM for Excel French CSV support
+    const blob = new Blob(["\uFEFF" + csvContext], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.setAttribute('download', `synthesis-${selectedMonthName.toLowerCase().replace(/\s+/g, '-')}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    DashboardService.showNotification("Export Excel (CSV compatible) généré avec succès !", "success");
   }
 }
 

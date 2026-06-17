@@ -11,6 +11,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/localforage@1.10.0/dist/localforage.min.js"></script>
     <!-- Lucide Icons CDN pour un chargement propre des icônes de navigation -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚚</text></svg>">
@@ -73,6 +74,10 @@
               <i data-lucide="user-cog" class="w-4 h-4"></i>
               <span>Mon Compte & Sécurité</span>
             </button>
+            <button data-view="drive-synthesis" id="nav_drive_synthesis" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-all text-slate-400 hover:bg-slate-800 hover:text-white font-semibold border-l-4 border-transparent">
+              <i data-lucide="cloud-lightning" class="w-4 h-4 text-blue-400"></i>
+              <span>Synthèse Google Drive</span>
+            </button>
 
             <!-- Administration Section (Admin only) -->
             <div id="admin-menu-group" class="hidden border-t border-slate-800 pt-3 mt-3 space-y-1">
@@ -122,6 +127,12 @@
           </div>
 
           <div class="topbar-actions flex items-center gap-3 lg:gap-4">
+            <!-- Synthèse Google Drive Button -->
+            <button id="btn_top_drive_synthesis" class="btn bg-indigo-50 hover:bg-indigo-100 text-indigo-600 dark:bg-slate-800 dark:hover:bg-slate-705 dark:text-blue-400 font-semibold text-[11px] py-1.5 px-2.5 xs:px-3 rounded-lg xs:rounded-xl flex items-center gap-1.5 transform active:scale-95 transition-all cursor-pointer animate-fade-in" onclick="window.app ? window.app.switchView('drive-synthesis') : null">
+              <i data-lucide="cloud-lightning" class="w-3.5 h-3.5 text-blue-500 animate-pulse"></i>
+              <span>Synthèse Google Drive</span>
+            </button>
+
             <!-- Ajout Rapide bouton -->
             <button id="btn_quick_add" class="btn btn-primary bg-blue-600 hover:bg-blue-700 text-white font-semibold text-[11px] py-1.5 px-2.5 xs:px-3 rounded-lg xs:rounded-xl flex items-center gap-1.5 transform active:scale-95 transition-all">
               <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i>
@@ -1727,6 +1738,224 @@
             </div>
           </section>
 
+          <!-- 7.5. VUE : SYNTHESE GOOGLE DRIVE (ADMIN / ACCOUNTANT) -->
+          <section id="section-drive-synthesis" class="space-y-6 hidden">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div>
+                <h2 class="text-xl lg:text-2xl font-black tracking-tight mb-1 text-slate-900 dark:text-white flex items-center gap-2">
+                  <i data-lucide="cloud-lightning" class="w-6 h-6 text-blue-500"></i>
+                  Synthèse d'Activité Google Drive
+                </h2>
+                <p class="text-sm text-slate-500 dark:text-slate-400 font-medium">Visualisez, analysez et exportez les statistiques d'activité sauvegardées sous forme de fichiers mensuels JSON sur Google Drive.</p>
+              </div>
+
+              <div class="flex flex-wrap items-center gap-2">
+                <!-- Select Month -->
+                <div class="flex items-center gap-2 bg-white dark:bg-slate-900 p-1.5 rounded-xl border border-slate-200/80 dark:border-slate-800 shadow-sm">
+                  <span class="text-xs font-bold text-slate-400 px-2 uppercase tracking-wide">Période:</span>
+                  <select id="synthesis_month_select" class="text-xs font-black bg-transparent outline-none border-none py-1.5 pr-8 text-slate-800 dark:text-white cursor-pointer">
+                    <option value="">Chargement...</option>
+                  </select>
+                </div>
+
+                <!-- Action Button group -->
+                <button id="btn_synthesis_refresh" class="btn btn-sm bg-indigo-50/50 hover:bg-indigo-100/50 text-indigo-600 dark:bg-indigo-950/40 dark:hover:bg-indigo-900/30 dark:text-indigo-400 border border-indigo-150 dark:border-indigo-900/80 rounded-xl font-bold flex items-center gap-1.5 py-2 cursor-pointer" title="Rafraîchir les données de ce mois depuis Google Drive">
+                  <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+                  Actualiser
+                </button>
+                <button id="btn_synthesis_sync_all" class="btn btn-sm bg-emerald-50 hover:bg-emerald-100 text-emerald-600 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/30 dark:text-emerald-400 border border-emerald-150 dark:border-emerald-900/80 rounded-xl font-bold flex items-center gap-1.5 py-2 cursor-pointer" title="Lancer une synchronisation bidirectionnelle complète">
+                  <i data-lucide="arrow-left-right" class="w-3.5 h-3.5"></i>
+                  Synchro Globale
+                </button>
+              </div>
+            </div>
+
+            <!-- Sync indicators bar -->
+            <div class="flex flex-wrap items-center justify-between gap-4 p-4 rounded-xl border border-blue-100 bg-blue-50/40 dark:border-blue-900/40 dark:bg-blue-950/15 text-xs text-blue-700 dark:text-blue-300 font-medium">
+              <div class="flex items-center gap-2">
+                <span class="relative flex h-2 w-2">
+                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-450 opacity-75"></span>
+                  <span class="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+                </span>
+                <span>Statut de connexion Google Drive : <strong class="font-extrabold text-blue-850 dark:text-blue-200">Connecté</strong></span>
+              </div>
+              <div class="flex items-center gap-4">
+                <span id="synthesis_last_sync_date">Dernière synchro : Non synchronisé</span>
+                <span id="synthesis_active_file_label" class="bg-blue-100 dark:bg-blue-900/50 px-2.5 py-1 rounded-lg text-[10px] uppercase font-mono text-blue-800 dark:text-blue-200">Fichier: aucun</span>
+              </div>
+            </div>
+
+            <!-- MAIN SUMMARY DASHBOARD CONTENT -->
+            <div id="synthesis_dashboard_container" class="space-y-6">
+
+              <!-- KPI GRID -->
+              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <!-- KPI 1 -->
+                <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-center gap-4">
+                  <div class="p-3 bg-blue-50 dark:bg-blue-950/30 text-blue-500 rounded-xl">
+                    <i data-lucide="route" class="w-5 h-5"></i>
+                  </div>
+                  <div>
+                    <span class="text-[10px] text-slate-400 uppercase tracking-widest font-black block">Missions Totales</span>
+                    <h3 class="text-xl font-black text-slate-950 dark:text-white leading-none mt-0.5" id="synth_kpi_missions">0</h3>
+                    <p class="text-[10px] text-slate-500 mt-1 font-semibold" id="synth_kpi_missions_sub">0 Terminées / 0 Planifiées</p>
+                  </div>
+                </div>
+
+                <!-- KPI 2 -->
+                <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-center gap-4">
+                  <div class="p-3 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-550 rounded-xl">
+                    <i data-lucide="banknote" class="w-5 h-5"></i>
+                  </div>
+                  <div>
+                    <span class="text-[10px] text-slate-400 uppercase tracking-widest font-black block">Chiffre d'Affaires</span>
+                    <h3 class="text-xl font-black text-emerald-600 dark:text-emerald-450 leading-none mt-0.5" id="synth_kpi_ca">0,00 €</h3>
+                    <p class="text-[10px] text-slate-500 mt-1 font-semibold" id="synth_kpi_ca_sub">Chiffre d'affaires brut</p>
+                  </div>
+                </div>
+
+                <!-- KPI 3 -->
+                <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-center gap-4">
+                  <div class="p-3 bg-rose-50 dark:bg-rose-950/30 text-rose-550 rounded-xl">
+                    <i data-lucide="receipt-text" class="w-5 h-5"></i>
+                  </div>
+                  <div>
+                    <span class="text-[10px] text-slate-400 uppercase tracking-widest font-black block">Frais Totaux (Net)</span>
+                    <h3 class="text-xl font-black text-rose-600 dark:text-rose-450 leading-none mt-0.5" id="synth_kpi_frais">0,00 €</h3>
+                    <p class="text-[10px] text-slate-500 mt-1 font-semibold" id="synth_kpi_frais_sub">Frais réels ajustés</p>
+                  </div>
+                </div>
+
+                <!-- KPI 4 -->
+                <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-center gap-4">
+                  <div class="p-3 bg-violet-50 dark:bg-violet-950/30 text-violet-550 rounded-xl">
+                    <i data-lucide="sparkles" class="w-5 h-5"></i>
+                  </div>
+                  <div>
+                    <span class="text-[10px] text-slate-400 uppercase tracking-widest font-black block">Marge Opérationnelle</span>
+                    <h3 class="text-xl font-black text-violet-650 dark:text-indigo-400 leading-none mt-0.5" id="synth_kpi_margin">0,00 €</h3>
+                    <p class="text-[10px] text-slate-500 mt-1 font-semibold" id="synth_kpi_margin_sub">Marge nette estimée</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- ANALYSIS GRID FIRST ROW -->
+              <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Status & Progress card -->
+                <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-4">
+                  <h3 class="text-sm font-black uppercase text-slate-800 dark:text-slate-100 tracking-wider flex items-center gap-2">
+                    <i data-lucide="workflow" class="w-4 h-4 text-slate-400"></i>
+                    Statut des Missions & Taux de Réussite
+                  </h3>
+                  <div id="synth_div_status_bars" class="space-y-4">
+                    <!-- Dynamic Progress bars -->
+                  </div>
+                </div>
+
+                <!-- Platform/Client Share Card -->
+                <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-4">
+                  <h3 class="text-sm font-black uppercase text-slate-800 dark:text-slate-100 tracking-wider flex items-center gap-2">
+                    <i data-lucide="layers" class="w-4 h-4 text-slate-400"></i>
+                    Performance par Plateforme / Client
+                  </h3>
+                  <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-xs">
+                      <thead>
+                        <tr class="border-b border-slate-100 dark:border-slate-800 text-slate-450 uppercase text-[10px] font-bold tracking-wider">
+                          <th class="py-2.5 font-bold">Plateforme</th>
+                          <th class="py-2.5 font-bold text-center">Courses</th>
+                          <th class="py-2.5 font-bold text-right">Revenu Brut</th>
+                          <th class="py-2.5 font-bold text-right font-mono">Part (%)</th>
+                        </tr>
+                      </thead>
+                      <tbody id="synth_tbody_platforms" class="divide-y divide-slate-100/60 dark:divide-slate-800/65 font-medium text-slate-700 dark:text-slate-350">
+                        <!-- Dynamic dynamic rows -->
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+
+              <!-- ANALYSIS GRID SECOND ROW -->
+              <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Drivers/Convoyeurs Performance -->
+                <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-4">
+                  <h3 class="text-sm font-black uppercase text-slate-800 dark:text-slate-100 tracking-wider flex items-center gap-2">
+                    <i data-lucide="users" class="w-4 h-4 text-slate-400"></i>
+                    Contribution des Convoyeurs / Chauffeurs
+                  </h3>
+                  <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-xs">
+                      <thead>
+                        <tr class="border-b border-slate-100 dark:border-slate-800 text-slate-450 uppercase text-[10px] font-bold tracking-wider">
+                          <th class="py-2.5 font-bold">Nom du Convoyeur</th>
+                          <th class="py-2.5 font-bold text-center">Missions</th>
+                          <th class="py-2.5 font-bold text-center">Kilomètres</th>
+                          <th class="py-2.5 font-bold text-right">CA Généré</th>
+                        </tr>
+                      </thead>
+                      <tbody id="synth_tbody_drivers" class="divide-y divide-slate-100/60 dark:divide-slate-800/65 font-medium text-slate-700 dark:text-slate-350">
+                        <!-- Dynamic driver rows -->
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <!-- Expenses Breakdown -->
+                <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-4">
+                  <h3 class="text-sm font-black uppercase text-slate-800 dark:text-slate-100 tracking-wider flex items-center gap-2">
+                    <i data-lucide="receipt" class="w-4 h-4 text-slate-400"></i>
+                    Analyse des Frais Professionnels
+                  </h3>
+                  <div id="synth_div_expenses_bars" class="space-y-4">
+                    <!-- Dynamic progress bars of expense distributions -->
+                  </div>
+                </div>
+              </div>
+
+              <!-- EXPORT CONTROLS AND FULL MISSIONS DETAIL TABLE -->
+              <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-4">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-4">
+                  <h3 class="text-sm font-black uppercase text-slate-800 dark:text-slate-100 tracking-wider flex items-center gap-2">
+                    <i data-lucide="table" class="w-4 h-4 text-slate-400"></i>
+                    Détail des Missions Importées
+                  </h3>
+                  <div class="flex flex-wrap items-center gap-2">
+                    <button id="btn_synth_export_pdf" class="btn btn-sm bg-rose-50 hover:bg-rose-100 text-rose-600 dark:bg-rose-950/40 dark:hover:bg-rose-900/30 dark:text-rose-400 border border-rose-150 dark:border-rose-900/80 rounded-xl font-bold flex items-center gap-1.5 py-1.5 px-3 cursor-pointer">
+                      <i data-lucide="file-text" class="w-3.5 h-3.5"></i>
+                      Exporter PDF (Rapport)
+                    </button>
+                    <button id="btn_synth_export_excel" class="btn btn-sm bg-blue-50 hover:bg-blue-100 text-blue-600 dark:bg-blue-950/40 dark:hover:bg-blue-900/30 dark:text-blue-450 border border-blue-150 dark:border-blue-900/80 rounded-xl font-bold flex items-center gap-1.5 py-1.5 px-3 cursor-pointer">
+                      <i data-lucide="file-spreadsheet" class="w-3.5 h-3.5"></i>
+                      Exporter Excel (XLS)
+                    </button>
+                  </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                  <table class="w-full text-left border-collapse text-[11px]">
+                    <thead>
+                      <tr class="border-b border-slate-100 dark:border-slate-800 text-slate-450 uppercase text-[9px] font-bold tracking-wider">
+                        <th class="py-2.5 font-bold">Date</th>
+                        <th class="py-2.5 font-bold">Véhicule</th>
+                        <th class="py-2.5 font-bold">Immatriculation</th>
+                        <th class="py-2.5 font-bold">Trajet</th>
+                        <th class="py-2.5 font-bold text-center">KM</th>
+                        <th class="py-2.5 font-bold text-center">Plateforme</th>
+                        <th class="py-2.5 font-bold text-center">Statut</th>
+                        <th class="py-2.5 font-bold text-right">Gain</th>
+                      </tr>
+                    </thead>
+                    <tbody id="synth_tbody_missions_list" class="divide-y divide-slate-100/60 dark:divide-slate-800/65 font-medium text-slate-700 dark:text-slate-350">
+                      <!-- Dynamic mission list rows -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+            </div>
+          </section>
+
           <!-- 8. VUE : MON COMPTE (ALL ROLES) -->
           <section id="section-account" class="space-y-6 hidden">
             <div>
@@ -1957,7 +2186,7 @@
 
                     <div class="text-center text-slate-350 dark:text-slate-550 text-[10px] uppercase font-bold tracking-wider py-1">— OU —</div>
 
-                    <button onclick="InspectionService.startInspection()" class="w-full text-center py-2.5 bg-indigo-650 hover:bg-indigo-600 text-white text-xs font-extrabold rounded-xl transition-all shadow-md cursor-pointer uppercase tracking-wider">
+                    <button onclick="InspectionService.startInspection()" class="w-full text-center py-2.5 bg-blue-400 hover:bg-blue-300 text-white text-xs font-extrabold rounded-xl transition-all shadow-md cursor-pointer uppercase tracking-wider">
                       Ignorer & Saisir Manuellement
                     </button>
                   </div>
@@ -2037,6 +2266,9 @@
                           <i data-lucide="plus-circle" class="w-4 h-4 text-indigo-500"></i>
                           Signaler un impact ou une rayure au départ
                         </button>
+                        <div id="ins_departure_radar_container" class="hidden aspect-square w-full max-w-[220px] mx-auto mt-4 pb-2">
+                          <canvas id="ins_departure_radar_chart"></canvas>
+                        </div>
                       </div>
                     </div>
 
@@ -2100,6 +2332,9 @@
                         <i data-lucide="shield-alert" class="w-4 h-4 text-indigo-500"></i>
                         Signaler un nouveau dégât (Carrosserie / Intérieur)
                       </button>
+                      <div id="ins_arrival_radar_container" class="hidden aspect-square w-full max-w-[220px] mx-auto mt-4 pb-2">
+                        <canvas id="ins_arrival_radar_chart"></canvas>
+                      </div>
                     </div>
 
                     <button onclick="InspectionService.showStep('arrival_status')" class="w-full text-center py-3 bg-indigo-605 hover:bg-indigo-600 text-white text-xs font-bold rounded-xl shadow-md transition-all uppercase cursor-pointer">
@@ -2164,8 +2399,14 @@
                         </div>
 
                         <div>
-                          <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Reçu caution remboursable</label>
-                          <div class="relative h-28 bg-slate-50 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-850 rounded-xl flex flex-col items-center justify-center cursor-pointer overflow-hidden group hover:border-indigo-500 transition-all border-dashed" onclick="InspectionService.viewDepositPhoto()">
+                          <div class="flex items-center justify-between mb-1 min-h-[16px]">
+                            <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Reçu caution remboursable</label>
+                            <label class="inline-flex items-center gap-1 cursor-pointer">
+                              <input type="checkbox" id="ins_has_deposit_receipt" class="rounded border-slate-200 dark:border-slate-800 text-indigo-600 focus:ring-indigo-500 w-3 h-3 cursor-pointer" onchange="InspectionService.toggleDepositReceipt(this.checked)">
+                              <span class="text-[8.5px] font-bold text-slate-450 dark:text-slate-500 uppercase tracking-wide">Avec reçu ?</span>
+                            </label>
+                          </div>
+                          <div id="ins_deposit_receipt_container" class="relative h-28 bg-slate-50 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-850 rounded-xl flex flex-col items-center justify-center cursor-not-allowed opacity-40 overflow-hidden group transition-all border-dashed" onclick="InspectionService.viewDepositPhoto()">
                             <img id="ins_preview_deposit_receipt" class="absolute inset-0 w-full h-full object-cover hidden" alt="Aperçu Reçu Caution">
                             <div id="ins_placeholder_deposit_receipt" class="flex flex-col items-center justify-center p-3 text-slate-400 dark:text-slate-500 group-hover:text-indigo-500 transition-colors text-center font-sans">
                               <i data-lucide="receipt" class="w-6 h-6 mb-1 group-hover:scale-110 transition-transform"></i>
@@ -3004,7 +3245,7 @@
 
             <div class="text-center text-slate-350 dark:text-slate-550 text-[10px] uppercase font-bold tracking-wider py-1">— OU —</div>
 
-            <button onclick="InspectionService.startInspection()" class="w-full text-center py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-extrabold rounded-xl transition-all shadow-md cursor-pointer uppercase tracking-wider">
+            <button onclick="InspectionService.startInspection()" class="w-full text-center py-2.5 bg-blue-400 hover:bg-blue-300 text-white text-xs font-extrabold rounded-xl transition-all shadow-md cursor-pointer uppercase tracking-wider">
               Ignorer & Saisir Manuellement
             </button>
           </div>
@@ -3211,10 +3452,16 @@
                 </div>
 
                 <div>
-                  <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Reçu caution remboursable</label>
-                  <div class="relative h-28 bg-slate-50 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-850 rounded-xl flex flex-col items-center justify-center cursor-pointer overflow-hidden group hover:border-indigo-500 transition-all border-dashed" onclick="InspectionService.viewDepositPhoto()">
-                    <img id="ins_preview_deposit_receipt" class="absolute inset-0 w-full h-full object-cover hidden" alt="Aperçu Reçu Caution">
-                    <div id="ins_placeholder_deposit_receipt" class="flex flex-col items-center justify-center p-3 text-slate-400 dark:text-slate-500 group-hover:text-indigo-500 transition-colors text-center font-sans">
+                  <div class="flex items-center justify-between mb-1 min-h-[16px]">
+                    <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Reçu caution remboursable</label>
+                    <label class="inline-flex items-center gap-1 cursor-pointer">
+                      <input type="checkbox" id="ins_has_deposit_receipt_obsolete" class="rounded border-slate-200 dark:border-slate-800 text-indigo-600 focus:ring-indigo-500 w-3 h-3 cursor-pointer" onchange="InspectionService.toggleDepositReceipt(this.checked)">
+                      <span class="text-[8.5px] font-bold text-slate-450 dark:text-slate-500 uppercase tracking-wide">Avec reçu ?</span>
+                    </label>
+                  </div>
+                  <div id="ins_deposit_receipt_container_obsolete" class="relative h-28 bg-slate-50 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-850 rounded-xl flex flex-col items-center justify-center cursor-not-allowed opacity-40 overflow-hidden group transition-all border-dashed" onclick="InspectionService.viewDepositPhoto()">
+                    <img id="ins_preview_deposit_receipt_obsolete" class="absolute inset-0 w-full h-full object-cover hidden" alt="Aperçu Reçu Caution">
+                    <div id="ins_placeholder_deposit_receipt_obsolete" class="flex flex-col items-center justify-center p-3 text-slate-400 dark:text-slate-500 group-hover:text-indigo-500 transition-colors text-center font-sans">
                       <i data-lucide="receipt" class="w-6 h-6 mb-1 group-hover:scale-110 transition-transform"></i>
                       <span class="text-[8.5px] font-bold uppercase tracking-wider mt-1 block">Photo Reçu</span>
                       <span class="text-[7.5px] italic text-slate-400 block leading-tight">Dépôt de garantie</span>
@@ -3437,32 +3684,84 @@
     </div>
 
     <!-- CAMERA FALLBACK MODAL -->
-    <div id="ins_camera_modal" class="fixed inset-0 z-[60] bg-slate-950/90 hidden items-center justify-center p-4">
-      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 max-w-lg w-full flex flex-col gap-4 text-white relative shadow-2xl">
-        <div class="flex items-center justify-between">
-          <span class="text-xs uppercase font-extrabold text-indigo-400 flex items-center gap-1.5">
-            <i data-lucide="camera" class="w-4 h-4 text-indigo-400"></i> APPAREIL PHOTO DE CONVOYAGE
+    <div id="ins_camera_modal" class="fixed inset-0 z-[60] bg-black hidden flex-col select-none overflow-hidden h-screen w-screen">
+      <!-- Full-screen video container with interactive tap surface -->
+      <div class="relative w-full h-full flex items-center justify-center overflow-hidden" onclick="InspectionService.handleTapToFocus(event)">
+        <video id="ins_camera_video" autoplay playsinline class="absolute inset-0 w-full h-full object-cover transition-all duration-300"></video>
+        <canvas id="ins_camera_canvas" class="hidden"></canvas>
+        
+        <!-- Camera status/loader overlay -->
+        <div id="ins_camera_status" class="absolute inset-0 bg-slate-950/85 flex flex-col items-center justify-center text-xs font-bold gap-3 text-slate-300 uppercase tracking-widest leading-relaxed p-6 text-center">
+          <i data-lucide="loader-2" class="w-8 h-8 text-indigo-400 animate-spin"></i>
+          <span>Démarrage de la caméra...</span>
+        </div>
+        
+        <!-- White Flash effect overlay -->
+        <div id="ins_camera_flash" class="absolute inset-0 bg-white opacity-0 pointer-events-none transition-opacity duration-75 z-40"></div>
+        
+        <!-- Custom animated focus target indicator -->
+        <div id="ins_camera_focus_indicator" class="absolute border-2 border-yellow-400 w-16 h-16 rounded-full pointer-events-none opacity-0 scale-150 transition-all duration-300 z-30 flex items-center justify-center">
+          <span class="w-2 h-2 rounded-full bg-yellow-400"></span>
+        </div>
+
+        <!-- Top Control Bar standard overlay -->
+        <div class="absolute top-0 inset-x-0 p-4 flex items-center justify-between z-20 bg-gradient-to-b from-black/80 via-black/40 to-transparent">
+          <div class="flex items-center gap-2">
+            <span class="text-[10px] uppercase font-black text-white bg-indigo-600/80 px-2.5 py-1 rounded-full flex items-center gap-1.5 backdrop-blur-md tracking-wider border border-white/10">
+              <i data-lucide="camera" class="w-3.5 h-3.5 text-indigo-300"></i> Appareil Photo Pro
+            </span>
+          </div>
+          <div class="flex items-center gap-2">
+            <!-- Camera switcher button -->
+            <button onclick="event.stopPropagation(); InspectionService.switchCamera()" class="p-2.5 bg-black/40 hover:bg-black/60 rounded-full text-white backdrop-blur-md border border-white/10 transition-all active:scale-90 cursor-pointer" title="Retourner caméra">
+              <i data-lucide="refresh-cw" class="w-5 h-5"></i>
+            </button>
+            <!-- Guide tips button -->
+            <button onclick="event.stopPropagation(); InspectionService.toggleCameraInfo()" class="p-2.5 bg-black/40 hover:bg-black/60 rounded-full text-white backdrop-blur-md border border-white/10 transition-all active:scale-90 cursor-pointer" title="Conseils de cadrage">
+              <i data-lucide="info" class="w-5 h-5"></i>
+            </button>
+            <!-- Close button -->
+            <button onclick="event.stopPropagation(); InspectionService.stopCameraStream()" class="p-2.5 bg-black/40 hover:bg-black/60 rounded-full text-white backdrop-blur-md border border-white/10 transition-all active:scale-90 cursor-pointer" title="Fermer">
+              <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Tap instructions overlay -->
+        <div class="absolute top-20 inset-x-0 text-center pointer-events-none z-10">
+          <span class="bg-black/45 text-[9px] uppercase tracking-widest text-slate-350 font-extrabold px-3.5 py-1.5 rounded-full backdrop-blur-md border border-white/5">
+            Touchez l'écran pour faire la mise au point
           </span>
-          <button onclick="InspectionService.stopCameraStream()" class="p-1 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-colors cursor-pointer">
-            <i data-lucide="x" class="w-5 h-5"></i>
-          </button>
         </div>
-        <div class="relative rounded-xl overflow-hidden aspect-[4/3] bg-black border border-slate-850 flex items-center justify-center">
-          <video id="ins_camera_video" autoplay playsinline class="w-full h-full object-cover"></video>
-          <canvas id="ins_camera_canvas" class="hidden"></canvas>
-          <div id="ins_camera_status" class="absolute inset-0 bg-slate-950/70 flex flex-col items-center justify-center text-xs font-bold gap-2 text-slate-400 uppercase tracking-widest leading-relaxed">Chargement du flux vidéo...</div>
-          <div id="ins_camera_flash" class="absolute inset-0 bg-white opacity-0 transition-opacity duration-75"></div>
-        </div>
-        <div class="flex items-center justify-between gap-3 pt-2">
-          <button onclick="InspectionService.toggleCameraInfo()" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-755 text-xs text-slate-350 font-bold rounded-xl flex items-center gap-1 hover:text-white transition-all cursor-pointer">
-            <i data-lucide="info" class="w-4 h-4"></i> Mode
-          </button>
-          <button onclick="InspectionService.capturePhoto()" class="px-6 py-3 bg-red-600 hover:bg-red-500 text-xs font-black uppercase text-white rounded-full flex items-center gap-1.5 shadow-lg shadow-red-600/25 hover:scale-105 active:scale-95 transition-all cursor-pointer">
-            <i data-lucide="circle-dot" class="w-5 h-5 animate-pulse"></i> Capturer la photo
-          </button>
-          <button onclick="InspectionService.triggerNativeCamera()" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-755 text-xs text-slate-350 font-bold rounded-xl flex items-center gap-1 hover:text-white transition-all cursor-pointer">
-            <i data-lucide="upload" class="w-4 h-4"></i> Charger cliché
-          </button>
+
+        <!-- Bottom Action Bar standard overlay -->
+        <div class="absolute bottom-0 inset-x-0 p-6 flex flex-col gap-4 z-20 bg-gradient-to-t from-black/95 via-black/50 to-transparent pb-8">
+          <div id="ins_camera_feedback_text" class="text-center text-[10px] text-slate-350 font-bold uppercase tracking-wider drop-shadow-md">
+            Prêt pour le cliché
+          </div>
+          <div class="flex items-center justify-between max-w-sm mx-auto w-full gap-4">
+            <!-- Left secondary control: Switch mode or fallback trigger -->
+            <button onclick="event.stopPropagation(); InspectionService.triggerNativeCamera()" class="flex flex-col items-center justify-center p-3 bg-white/10 hover:bg-white/25 active:scale-95 text-xs text-white font-bold rounded-2xl border border-white/10 backdrop-blur-md transition-all cursor-pointer w-20 h-20" title="Charger cliché">
+              <i data-lucide="image" class="w-5 h-5 mb-1 text-slate-200"></i>
+              <span class="text-[8px] uppercase tracking-wide">Fichier</span>
+            </button>
+
+            <!-- Center primary control: Capture Button (Beautiful Custom Shutter Ring) -->
+            <button onclick="event.stopPropagation(); InspectionService.capturePhoto()" class="relative flex items-center justify-center w-20 h-20 bg-white/20 hover:bg-white/30 rounded-full transition-all group scale-100 active:scale-90 p-1 cursor-pointer" title="Prendre photo">
+              <!-- Outer glowing white ring -->
+              <div class="absolute inset-0 rounded-full border-4 border-white group-hover:scale-105 transition-transform shadow-lg shadow-white/10"></div>
+              <!-- Inner solid red action circle with camera icon -->
+              <div class="w-14 h-14 rounded-full bg-rose-500 hover:bg-rose-600 transition-colors flex items-center justify-center">
+                <i data-lucide="aperture" class="w-6 h-6 text-white animate-spin-slow"></i>
+              </div>
+            </button>
+
+            <!-- Right secondary control: Flip camera -->
+            <button onclick="event.stopPropagation(); InspectionService.switchCamera()" class="flex flex-col items-center justify-center p-3 bg-white/10 hover:bg-white/25 active:scale-95 text-xs text-white font-bold rounded-2xl border border-white/10 backdrop-blur-md transition-all cursor-pointer w-20 h-20" title="Pivoter camera">
+              <i data-lucide="refresh-cw" class="w-5 h-5 mb-1 text-slate-200"></i>
+              <span class="text-[8px] uppercase tracking-wide">Pivoter</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>

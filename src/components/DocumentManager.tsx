@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { googleSignIn, initAuth, logout, manualTokenSignIn } from '../driveAuth';
+import { jsPDF } from 'jspdf';
 
 const DocumentManager: React.FC = () => {
   const [user, setUser] = useState<any | null>(null);
@@ -9,6 +10,10 @@ const DocumentManager: React.FC = () => {
   const [showManual, setShowManual] = useState(false);
   const [manualTokenVal, setManualTokenVal] = useState('');
   const [manualEmailVal, setManualEmailVal] = useState('');
+
+  const [isScanning, setIsScanning] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [stream, setStream] = useState<MediaStream | null>(null);
 
   const isIframe = window.self !== window.top;
 
@@ -96,6 +101,64 @@ const DocumentManager: React.FC = () => {
     }
   };
 
+  const startCamera = async () => {
+    setIsScanning(true);
+    try {
+      const mediaStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'environment' }
+      });
+      setStream(mediaStream);
+      if (videoRef.current) {
+        videoRef.current.srcObject = mediaStream;
+      }
+    } catch (err) {
+      console.error("Erreur d'accès à la caméra:", err);
+      setErrorMsg("Impossible d'accéder à la caméra. Vérifiez vos permissions.");
+      setIsScanning(false);
+    }
+  };
+
+  const stopCamera = () => {
+    if (stream) {
+      stream.getTracks().forEach(track => track.stop());
+      setStream(null);
+    }
+    setIsScanning(false);
+  };
+
+  const captureAndConvertToPDF = () => {
+    if (!videoRef.current) return;
+    
+    // Create a canvas to capture the image
+    const canvas = document.createElement('canvas');
+    canvas.width = videoRef.current.videoWidth;
+    canvas.height = videoRef.current.videoHeight;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+    const imgData = canvas.toDataURL('image/jpeg', 0.9);
+    
+    // Stop camera
+    stopCamera();
+    
+    // Convert to PDF
+    try {
+      const pdf = new jsPDF({
+        orientation: canvas.width > canvas.height ? 'landscape' : 'portrait',
+        unit: 'px',
+        format: [canvas.width, canvas.height]
+      });
+      
+      pdf.addImage(imgData, 'JPEG', 0, 0, canvas.width, canvas.height);
+      pdf.save(`Document_Scanne_${new Date().getTime()}.pdf`);
+    } catch (err) {
+      console.error("Erreur lors de la conversion PDF:", err);
+      setErrorMsg("Erreur lors de la création du PDF.");
+    }
+  };
+
+
   if (loading) {
     return (
       <div className="flex flex-col h-full items-center justify-center p-8 text-center text-slate-500 font-sans">
@@ -166,6 +229,13 @@ const DocumentManager: React.FC = () => {
                   </div>
                 </div>
               </div>
+            </div>
+            
+            <div className="pt-4 border-t border-slate-200/50 dark:border-slate-800/80">
+               <button onClick={startCamera} className="w-full sm:w-auto px-4 py-3 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-2 cursor-pointer transition-colors shadow-sm">
+                 <i data-lucide="camera" className="w-4 h-4"></i>
+                 Scanner un document (PDF)
+               </button>
             </div>
 
             <div className="pt-2 flex justify-end">
@@ -314,8 +384,41 @@ const DocumentManager: React.FC = () => {
           Secured with Google Cloud API & Drive SDK v3
         </p>
       </div>
+
+      {isScanning && (
+        <div className="fixed inset-0 z-50 bg-black flex flex-col">
+          <div className="flex-1 relative flex items-center justify-center bg-black overflow-hidden relative">
+             {/* Guide rectangle pour le document */}
+             <div className="absolute inset-0 z-10 border-[16px] border-black/50 pointer-events-none">
+               <div className="w-full h-full border-2 border-indigo-500/80 rounded-xl"></div>
+             </div>
+             
+             <video 
+               ref={videoRef} 
+               autoPlay 
+               playsInline 
+               className="w-full h-full object-cover" 
+             />
+          </div>
+          <div className="bg-slate-900 px-6 py-8 flex items-center justify-between text-white pb-safe">
+            <button 
+              onClick={stopCamera} 
+              className="text-slate-300 hover:text-white text-xs uppercase tracking-widest font-bold"
+            >
+              Annuler
+            </button>
+            <button 
+              onClick={captureAndConvertToPDF} 
+              className="w-16 h-16 rounded-full bg-indigo-500 border-4 border-indigo-200 outline outline-offset-4 outline-white hover:bg-indigo-600 transition-colors cursor-pointer"
+            >
+            </button>
+            <div className="w-14"></div> {/* spacer */}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
 export default DocumentManager;
+
