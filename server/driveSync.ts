@@ -4,6 +4,20 @@ import fs from "fs";
 import path from "path";
 import { DbService } from "./db";
 
+async function fetchWithRetry<T = any>(fn: () => Promise<T>, retries = 4, delay = 1000): Promise<T> {
+  try {
+    return await fn();
+  } catch (error: any) {
+    const isClientError = error?.code && error.code >= 400 && error.code < 500;
+    if (retries > 0 && !isClientError) {
+      console.warn(`[Drive Retry] Request failed. Retrying in ${delay}ms... (Remaining retries: ${retries}). Error: ${error?.message || error}`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+      return fetchWithRetry(fn, retries - 1, delay * 2);
+    }
+    throw error;
+  }
+}
+
 // Map of French month names
 const FRENCH_MONTH_NAMES: { [key: string]: string } = {
   "01": "Janvier",
@@ -30,19 +44,24 @@ const MONTH_NAMES_TO_NUM: { [key: string]: string } = {
 
 // Find or create a folder helper
 async function findOrCreateFolder(drive: any, name: string, parentId?: string): Promise<string> {
-  let q = `mimeType = 'application/vnd.google-apps.folder' and name = '${name.replace(/'/g, "\\'")}' and trashed = false`;
+  let q;
+  if (name.toLowerCase() === "data") {
+    q = `mimeType = 'application/vnd.google-apps.folder' and (name = 'data' or name = 'Data') and trashed = false`;
+  } else {
+    q = `mimeType = 'application/vnd.google-apps.folder' and name = '${name.replace(/'/g, "\\'")}' and trashed = false`;
+  }
   if (parentId) {
     q += ` and '${parentId}' in parents`;
   } else {
     q += " and 'root' in parents";
   }
 
-  const response = await drive.files.list({
+  const response = await fetchWithRetry(() => drive.files.list({
     q: q,
     spaces: "drive",
     fields: "files(id, name)",
     pageSize: 1
-  });
+  }));
 
   const files = response.data.files || [];
   if (files.length > 0 && files[0].id) {
@@ -50,17 +69,17 @@ async function findOrCreateFolder(drive: any, name: string, parentId?: string): 
   }
 
   const fileMetadata: any = {
-    name: name,
+    name: name.toLowerCase() === "data" ? "Data" : name,
     mimeType: "application/vnd.google-apps.folder"
   };
   if (parentId) {
     fileMetadata.parents = [parentId];
   }
 
-  const folder = await drive.files.create({
+  const folder = await fetchWithRetry(() => drive.files.create({
     requestBody: fileMetadata,
     fields: "id"
-  });
+  }));
 
   return folder.data.id!;
 }
@@ -72,7 +91,7 @@ export function groupMissionsByMonth(missions: any[]): { [key: string]: any[] } 
     const dateStr = m.date || new Date().toISOString().split("T")[0];
     const parts = dateStr.split("-");
     const year = parts[0] || "2026";
-    const month = parts[1] || "06";
+    const month = String(parts[1] || "06").padStart(2, "0");
     const key = `${year}-${month}`; // e.g. "2026-06"
     if (!groups[key]) {
       groups[key] = [];
@@ -126,6 +145,13 @@ export const DriveSyncService = {
         const drive = google.drive({ version: "v3", auth: oauth2Client });
 
         const rootId = await findOrCreateFolder(drive, "Convoyeur Professionnel");
+        
+        // Ensure Régime Fiscal folders exist
+        const regimeFiscalId = await findOrCreateFolder(drive, "Régime Fiscal", rootId);
+        await findOrCreateFolder(drive, "Annuel", regimeFiscalId);
+        await findOrCreateFolder(drive, "Mensuel", regimeFiscalId);
+        await findOrCreateFolder(drive, "Trimestriel", regimeFiscalId);
+
         const convoyagesId = await findOrCreateFolder(drive, "Convoyages", rootId);
 
         // Group local missions
@@ -141,12 +167,12 @@ export const DriveSyncService = {
 
           const fileName = `missions-${year}-${month}.json`;
           const q = `name = '${fileName}' and '${dataFolderId}' in parents and trashed = false`;
-          const listRes = await drive.files.list({
+          const listRes = await fetchWithRetry(() => drive.files.list({
             q: q,
             spaces: "drive",
             fields: "files(id, name)",
             pageSize: 1
-          });
+          }));
 
           const driveFiles = listRes.data.files || [];
           let previousDriveData: any[] = [];
@@ -155,10 +181,10 @@ export const DriveSyncService = {
           if (driveFiles.length > 0 && driveFiles[0].id) {
             fileId = driveFiles[0].id;
             try {
-              const fileContent = await drive.files.get({
+              const fileContent = await fetchWithRetry(() => drive.files.get({
                 fileId: fileId,
                 alt: "media"
-              }, { responseType: "text" });
+              }, { responseType: "text" }));
               previousDriveData = typeof fileContent.data === "string" ? JSON.parse(fileContent.data) : fileContent.data;
               if (!Array.isArray(previousDriveData)) previousDriveData = [];
             } catch (err) {
@@ -188,10 +214,10 @@ export const DriveSyncService = {
           };
 
           if (fileId) {
-            await drive.files.update({
+            await fetchWithRetry(() => drive.files.update({
               fileId: fileId,
               media: media
-            });
+            }));
             console.log(`[Background Sync] Updated: ${fileName} on Google Drive`);
             DbService.addLog(
               "DRIVE_SYNC_AUTO",
@@ -199,13 +225,13 @@ export const DriveSyncService = {
               `Fichier mensuel synchronisé automatiquement (mise à jour) : ${fileName} (${mergedList.length} missions)`
             );
           } else {
-            await drive.files.create({
+            await fetchWithRetry(() => drive.files.create({
               requestBody: {
                 ...fileMetadata,
                 parents: [dataFolderId]
               },
               media: media
-            });
+            }));
             console.log(`[Background Sync] Created: ${fileName} on Google Drive`);
             DbService.addLog(
               "DRIVE_SYNC_AUTO",
@@ -235,15 +261,22 @@ export const DriveSyncService = {
     const drive = google.drive({ version: "v3", auth: oauth2Client });
 
     const rootId = await findOrCreateFolder(drive, "Convoyeur Professionnel");
+
+    // Ensure Régime Fiscal folders exist
+    const regimeFiscalId = await findOrCreateFolder(drive, "Régime Fiscal", rootId);
+    await findOrCreateFolder(drive, "Annuel", regimeFiscalId);
+    await findOrCreateFolder(drive, "Mensuel", regimeFiscalId);
+    await findOrCreateFolder(drive, "Trimestriel", regimeFiscalId);
+
     const convoyagesId = await findOrCreateFolder(drive, "Convoyages", rootId);
 
     // List all folders in Convoyages folder (these are years now!)
-    const listYearsObj = await drive.files.list({
+    const listYearsObj = await fetchWithRetry(() => drive.files.list({
       q: `mimeType = 'application/vnd.google-apps.folder' and '${convoyagesId}' in parents and trashed = false`,
       spaces: "drive",
       fields: "files(id, name)",
       pageSize: 100
-    });
+    }));
 
     const yearFolders = listYearsObj.data.files || [];
     let cumulativeMissions: any[] = [...localMissions];
@@ -255,12 +288,12 @@ export const DriveSyncService = {
       if (isNaN(Number(year)) || year.length !== 4) continue; // Must be a 4-digit year
 
       // List all month folders under this year folder
-      const listMonthsObj = await drive.files.list({
+      const listMonthsObj = await fetchWithRetry(() => drive.files.list({
         q: `mimeType = 'application/vnd.google-apps.folder' and '${yearFolder.id}' in parents and trashed = false`,
         spaces: "drive",
         fields: "files(id, name)",
         pageSize: 100
-      });
+      }));
 
       const monthFolders = listMonthsObj.data.files || [];
       for (const monthFolder of monthFolders) {
@@ -277,12 +310,12 @@ export const DriveSyncService = {
         const dataFolderId = await findOrCreateFolder(drive, "Data", monthFolder.id);
 
         // List JSON files in "Data" folder
-        const fileListObj = await drive.files.list({
+        const fileListObj = await fetchWithRetry(() => drive.files.list({
           q: `name = 'missions-${year}-${monthNum}.json' and '${dataFolderId}' in parents and trashed = false`,
           spaces: "drive",
           fields: "files(id, name)",
           pageSize: 1
-        });
+        }));
 
         const files = fileListObj.data.files || [];
         let remoteMissions: any[] = [];
@@ -291,10 +324,10 @@ export const DriveSyncService = {
         if (files.length > 0 && files[0].id) {
           fileId = files[0].id;
           try {
-            const fileContent = await drive.files.get({
+            const fileContent = await fetchWithRetry(() => drive.files.get({
               fileId: fileId,
               alt: "media"
-            }, { responseType: "text" });
+            }, { responseType: "text" }));
 
             const data = typeof fileContent.data === "string" ? JSON.parse(fileContent.data) : fileContent.data;
             remoteMissions = Array.isArray(data) ? data : [];
@@ -337,12 +370,12 @@ export const DriveSyncService = {
           };
 
           if (fileId) {
-            await drive.files.update({ fileId, media });
+            await fetchWithRetry(() => drive.files.update({ fileId, media }));
           } else {
-            await drive.files.create({
+            await fetchWithRetry(() => drive.files.create({
               requestBody: { ...fileMetadata, parents: [dataFolderId] },
               media
-            });
+            }));
           }
           console.log(`[Bidirectional Sync] Overwrote/Created updated file for month: ${key} on Google Drive`);
         }
@@ -371,10 +404,10 @@ export const DriveSyncService = {
         body: Readable.from(JSON.stringify(mList, null, 2))
       };
 
-      await drive.files.create({
+      await fetchWithRetry(() => drive.files.create({
         requestBody: { ...fileMetadata, parents: [dataFolderId] },
         media
-      });
+      }));
 
       cumulativeMissions = cumulativeMissions.filter(m => {
         const dateStr = m.date || new Date().toISOString().split("T")[0];

@@ -96,24 +96,23 @@ export function initDatabase() {
       passwordHash,
       role: 'ADMIN',
       status: 'ACTIVE',
-      mustChangePassword: false
+      mustChangePassword: true
     });
     db.logs.push({
       id: crypto.randomUUID(),
       timestamp: new Date().toISOString(),
       event: 'USER_CREATION',
       actingUser: 'SYSTEM',
-      details: 'Seeded default administrator account: admin_auth'
+      details: 'Seeded default administrator account with forced first-login password change flag'
     });
     modified = true;
   }
 
-  // 2. Seed/Force accountant: accountant / ACC@con125
-  const accountantIndex = db.users.findIndex(u => u.username === 'accountant');
-  const saltAcc = generateSalt();
-  const passwordHashAcc = hashPassword('ACC@con125', saltAcc);
-  
-  if (accountantIndex === -1) {
+  // 2. Seed accountant: accountant / ACC@con125
+  const accountantExists = db.users.some(u => u.username === 'accountant');
+  if (!accountantExists) {
+    const saltAcc = generateSalt();
+    const passwordHashAcc = hashPassword('ACC@con125', saltAcc);
     db.users.push({
       fullname: 'Expert Comptable',
       username: 'accountant',
@@ -122,23 +121,15 @@ export function initDatabase() {
       passwordHash: passwordHashAcc,
       role: 'ACCOUNTANT',
       status: 'ACTIVE',
-      mustChangePassword: false
+      mustChangePassword: true
     });
     db.logs.push({
       id: crypto.randomUUID(),
       timestamp: new Date().toISOString(),
       event: 'USER_CREATION',
       actingUser: 'SYSTEM',
-      details: 'Seeded default accountant account: accountant (ACC@con125)'
+      details: 'Seeded default accountant account with forced first-login password change flag'
     });
-    modified = true;
-  } else {
-    // Force reset to the user's requested password to ensure any old instances are updated
-    db.users[accountantIndex].salt = saltAcc;
-    db.users[accountantIndex].passwordHash = passwordHashAcc;
-    db.users[accountantIndex].mustChangePassword = false;
-    db.users[accountantIndex].status = 'ACTIVE';
-    db.users[accountantIndex].role = 'ACCOUNTANT';
     modified = true;
   }
 

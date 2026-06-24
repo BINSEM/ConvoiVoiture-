@@ -6,6 +6,7 @@ import multer from "multer";
 import { google } from "googleapis";
 import { Readable } from "stream";
 import fs from "fs";
+import crypto from "crypto";
 import { initDatabase, DbService, hashPassword } from "./server/db";
 import { DriveSyncService } from "./server/driveSync";
 
@@ -127,6 +128,10 @@ async function startServer() {
       return res.status(403).json({ success: false, error: "Votre compte a été désactivé." });
     }
 
+    if (user.mustChangePassword && req.path !== "/api/auth/change-password" && req.path !== "/api/auth/logout" && req.path !== "/api/auth/me") {
+      return res.status(403).json({ success: false, error: "Changement de mot de passe obligatoire.", mustChangePassword: true });
+    }
+
     req.user = user;
     req.sessionToken = token;
     next();
@@ -179,27 +184,15 @@ async function startServer() {
     }
 
     // Authenticate password hashes
-    // Special check for accountant seed constraints:
-    // If the input is ACC@con125 or stored hash matches, allow password change or direct login
     let isValid = false;
-    let bypassedFirstReset = false;
 
     const currentHash = hashPassword(password, user.salt);
     if (currentHash === user.passwordHash) {
       isValid = true;
-    } else if (username.toLowerCase() === 'accountant' && password === 'ACC@con125') {
-      isValid = true;
-      bypassedFirstReset = true;
     }
 
     if (!isValid) {
       return res.status(401).json({ success: false, error: "Nom d'utilisateur ou mot de passe incorrect." });
-    }
-
-    // If accountant logged in using direct override, we clear force-password-reset
-    if (bypassedFirstReset && user.mustChangePassword) {
-      DbService.resetUserPassword('accountant', 'ACC@con125', false, 'SYSTEM');
-      user.mustChangePassword = false;
     }
 
     // Allocate Session TOKEN
@@ -426,7 +419,7 @@ async function startServer() {
   });
 
   // Save missions locally to fallback sample-data.json
-  app.post("/api/missions/save-local", authenticate, (req: any, res) => {
+  app.post("/api/missions/save-local", authenticate, requireRole(["ADMIN"]), (req: any, res) => {
     try {
       const { missions } = req.body;
       if (!Array.isArray(missions)) {
@@ -447,6 +440,23 @@ async function startServer() {
     } catch (err: any) {
       console.error("Error saving local sample data:", err);
       return res.status(500).json({ success: false, error: err.message || "Failed to save locally" });
+    }
+  });
+
+  // Get missions saved locally in sample-data.json
+  app.get("/api/missions/load-local", authenticate, requireRole(["ADMIN", "ACCOUNTANT"]), (req: any, res) => {
+    try {
+      const dataPath = path.join(process.cwd(), "data", "sample-data.json");
+      let missions: any[] = [];
+      if (fs.existsSync(dataPath)) {
+        try {
+          missions = JSON.parse(fs.readFileSync(dataPath, "utf-8"));
+        } catch (_) {}
+      }
+      return res.json({ success: true, missions });
+    } catch (err: any) {
+      console.error("Error reading local missions:", err);
+      return res.status(500).json({ success: false, error: "Failed to read local missions" });
     }
   });
 
@@ -572,8 +582,35 @@ async function startServer() {
     }
   });
 
+  // Proxy endpoint to list files from Google Drive to bypass client-side CORS policy restrictions
+  app.get("/api/drive/list-files", authenticate, async (req: any, res) => {
+    try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        return res.status(401).json({ success: false, error: "Missing or invalid authorization header" });
+      }
+      const token = authHeader.split(" ")[1];
+
+      const oauth2Client = new google.auth.OAuth2();
+      oauth2Client.setCredentials({ access_token: token });
+      const drive = google.drive({ version: "v3", auth: oauth2Client });
+
+      const response = await drive.files.list({
+        pageSize: 24,
+        fields: 'files(id, name, mimeType, size, createdTime, thumbnailLink, webContentLink, iconLink)',
+        q: 'mimeType contains "image/" or mimeType = "application/pdf"',
+        spaces: 'drive'
+      });
+
+      return res.json({ success: true, files: response.data.files || [] });
+    } catch (err: any) {
+      console.error("Error listing files via proxy:", err);
+      return res.status(500).json({ success: false, error: err.message || "Failed to list files from Google Drive" });
+    }
+  });
+
   // Bidirectional monthly sync
-  app.post("/api/drive/sync-all-months", authenticate, async (req: any, res) => {
+  app.post("/api/drive/sync-all-months", authenticate, requireRole(["ADMIN"]), async (req: any, res) => {
     try {
       const authHeader = req.headers.authorization;
       if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -740,12 +777,12 @@ async function startServer() {
         return res.status(404).json({ success: false, error: `Folder for month '${frenchMonth}' not found under year '${year}'.` });
       }
 
-      // Find 'Data' folder
-      q = `mimeType = 'application/vnd.google-apps.folder' and name = 'Data' and trashed = false and '${monthFolders[0].id}' in parents`;
+      // Find 'data' or 'Data' folder
+      q = `mimeType = 'application/vnd.google-apps.folder' and (name = 'data' or name = 'Data') and trashed = false and '${monthFolders[0].id}' in parents`;
       listResponse = await drive.files.list({ q, spaces: "drive", fields: "files(id, name)", pageSize: 1 });
       const dataFolders = listResponse.data.files || [];
       if (dataFolders.length === 0 || !dataFolders[0].id) {
-        return res.status(404).json({ success: false, error: `Subfolder 'Data' in '${frenchMonth} ${year}' not found.` });
+        return res.status(404).json({ success: false, error: `Subfolder 'data' in '${frenchMonth} ${year}' not found.` });
       }
 
       const fileName = `missions-${year}-${month}.json`;
@@ -777,7 +814,7 @@ async function startServer() {
     }
   });
 
-  app.post("/api/drive/upload", authenticate, upload.single("file"), async (req: any, res) => {
+  app.post("/api/drive/upload", authenticate, requireRole(["ADMIN"]), upload.single("file"), async (req: any, res) => {
     try {
       const authHeader = req.headers.authorization;
       if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -821,10 +858,11 @@ async function startServer() {
       // 5. [Voiture Immatriculation] inside [Month Name]
       const registrationId = await getOrCreateFolder(drive, immatriculation, monthId);
 
-      // 6. "État des lieux" inside [Voiture Immatriculation]
-      const etatDesLieuxId = await getOrCreateFolder(drive, "État des lieux", registrationId);
+      // 6. "Etat-des-lieux-YYYY-MM-DD" inside [Voiture Immatriculation]
+      const folderName = `Etat-des-lieux-${dateStr}`;
+      const etatDesLieuxId = await getOrCreateFolder(drive, folderName, registrationId);
 
-      // 7. Upload file inside "État des lieux"
+      // 7. Upload file inside corresponding folder
       const fileMetadata = {
         name: filename,
         parents: [etatDesLieuxId]
@@ -835,24 +873,52 @@ async function startServer() {
         body: Readable.from(req.file.buffer)
       };
 
+      // Calculate localized file size and MD5 checksum for duplicate check
+      const fileHash = crypto.createHash("md5").update(req.file.buffer).digest("hex");
+      const fileSize = req.file.size || req.file.buffer.length;
+
       // Check if file already exists in this exact folder
       const q = `name = '${filename.replace(/'/g, "\\'")}' and '${etatDesLieuxId}' in parents and trashed = false`;
       const duplicateList = await drive.files.list({
         q: q,
         spaces: "drive",
-        fields: "files(id)",
-        pageSize: 1
+        fields: "files(id, name, md5Checksum, size)",
+        pageSize: 10
       });
 
       let driveFile;
-      if (duplicateList.data.files && duplicateList.data.files.length > 0) {
-        const existingId = duplicateList.data.files[0].id;
+      let skippedDueToDuplicate = false;
+
+      const driveFiles = duplicateList.data.files || [];
+      const match = driveFiles.find(f => {
+        return f.name === filename && 
+               f.md5Checksum === fileHash && 
+               Number(f.size) === fileSize;
+      });
+
+      if (match) {
+        // An identical file with same name, size, and MD5 hash already exists!
+        // Skip the upload to guarantee duplicate prevention as requested.
+        skippedDueToDuplicate = true;
+        return res.json({
+          success: true,
+          fileId: match.id,
+          duplicated: true,
+          message: "File already exists on Google Drive (skipped upload)",
+          path: `Convoyeur Professionnel/Convoyages/${year}/${frenchMonth}/${immatriculation}/${folderName}/${filename}`
+        });
+      }
+
+      // If a file with same name but different content exists, update it.
+      const existingFile = driveFiles.find(f => f.name === filename);
+      if (existingFile) {
         driveFile = await drive.files.update({
-          fileId: existingId!,
+          fileId: existingFile.id!,
           media: media,
           fields: "id"
         });
       } else {
+        // Otherwise, create a clean new file record.
         driveFile = await drive.files.create({
           requestBody: fileMetadata,
           media: media,
@@ -863,7 +929,7 @@ async function startServer() {
       return res.json({
         success: true,
         fileId: driveFile.data.id,
-        path: `Convoyeur Professionnel/Convoyages/${year}/${frenchMonth}/${immatriculation}/État des lieux/${filename}`
+        path: `Convoyeur Professionnel/Convoyages/${year}/${frenchMonth}/${immatriculation}/${folderName}/${filename}`
       });
 
     } catch (err: any) {

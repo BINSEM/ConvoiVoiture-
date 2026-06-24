@@ -653,11 +653,14 @@ export const ExportService = {
       </head>
       <body>
         <div class="header">
-          <div class="company-info">
-            <h1>${settings.nom}</h1>
-            <p>${settings.statutEntreprise}</p>
-            <p>Siret: (À renseigner dans les paramètres)</p>
-            <p>Email: ${window.localStorage.getItem('currentUserEmail') || 'convoyeur@gmail.com'}</p>
+          <div style="display: flex; align-items: center; gap: 15px;">
+            <img src="/SE LogoLargeHEXT02.png" alt="SE Logistique" style="height: 50px; width: auto; object-fit: contain;" referrerPolicy="no-referrer" />
+            <div class="company-info">
+              <h1>${settings.nom}</h1>
+              <p>${settings.statutEntreprise}</p>
+              <p>Siret: (À renseigner dans les paramètres)</p>
+              <p>Email: ${window.localStorage.getItem('currentUserEmail') || 'convoyeur@gmail.com'}</p>
+            </div>
           </div>
           <div class="report-info">
             <h2>BILAN COMPTABLE ${titleAddon}</h2>

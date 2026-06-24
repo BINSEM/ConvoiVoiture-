@@ -2,6 +2,17 @@
 
 import { DashboardService } from './dashboard.js';
 
+const escapeHtml = (str) => {
+  if (window.escapeHtml) return window.escapeHtml(str);
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+};
+
 export const PlannerService = {
   // Liste simulée d'opportunités entrantes avec dates associées
   mockedOpportunities: [
@@ -246,7 +257,7 @@ export const PlannerService = {
       <div draggable="true" ondragstart="window.PlannerService.handleDragStart(event, '${o.id}')" ondragend="window.PlannerService.handleDragEnd(event)" class="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-2xl p-4 hover:border-indigo-500/60 dark:hover:border-indigo-550 hover:shadow-lg hover:shadow-indigo-550/5 transition-all cursor-grab active:cursor-grabbing group shadow-sm select-none" onclick="PlannerService.addToPlan('${o.id}')">
         <div class="flex items-center justify-between mb-3">
           <div class="flex items-center gap-1.5 flex-wrap">
-            <span class="text-[10px] font-black px-2.5 py-1 rounded-full ${this.getBadgeColor(o.platform)} tracking-wide shadow-xs">${o.platform}</span>
+            <span class="text-[10px] font-black px-2.5 py-1 rounded-full ${this.getBadgeColor(o.platform)} tracking-wide shadow-xs">${escapeHtml(o.platform)}</span>
             <span class="text-[9px] font-bold bg-slate-50 dark:bg-slate-950 text-slate-500 dark:text-slate-450 px-2 py-1 rounded-lg flex items-center gap-1 border border-slate-200/30 dark:border-slate-800/40">
               <i data-lucide="calendar" class="w-3 h-3 text-slate-450 shrink-0"></i>
               <span>${this.formatOppDate(o.date)}</span>
@@ -261,13 +272,13 @@ export const PlannerService = {
         </div>
         <div class="flex items-center justify-between text-xs sm:text-sm my-2 gap-2">
           <div class="flex-1 min-w-0 text-left">
-            <p class="font-black text-slate-800 dark:text-slate-200 truncate" title="${o.from}">${o.from}</p>
+            <p class="font-black text-slate-800 dark:text-slate-200 truncate" title="${escapeHtml(o.from)}">${escapeHtml(o.from)}</p>
           </div>
           <div class="px-1.5 shrink-0 flex items-center justify-center">
             <i data-lucide="arrow-right" class="w-4 h-4 text-slate-300 dark:text-slate-700 transition-transform group-hover:translate-x-0.5"></i>
           </div>
           <div class="flex-1 min-w-0 text-right">
-            <p class="font-black text-slate-800 dark:text-slate-200 truncate" title="${o.to}">${o.to}</p>
+            <p class="font-black text-slate-800 dark:text-slate-200 truncate" title="${escapeHtml(o.to)}">${escapeHtml(o.to)}</p>
           </div>
         </div>
         <div class="flex items-center justify-between mt-3.5 pt-2.5 border-t border-slate-100/60 dark:border-slate-900/60 text-[10px] text-slate-400">
@@ -417,7 +428,7 @@ export const PlannerService = {
           <!-- MOBILE ACCORDION / ADAPTIVE LAYOUT (md:hidden) -->
           <div class="md:hidden flex-1 flex flex-col gap-3">
              <div class="flex items-center justify-between">
-               <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${this.getBadgeColor(m.platform)} tracking-wide shadow-xs">${m.platform}</span>
+               <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${this.getBadgeColor(m.platform)} tracking-wide shadow-xs">${escapeHtml(m.platform)}</span>
                <div class="flex flex-col text-right">
                  <span class="font-black font-mono text-[#059669] dark:text-emerald-400 text-sm leading-none">${m.price.toFixed(2)} €</span>
                  <span class="text-[8px] font-bold text-slate-400 mt-1">${(m.price/m.distance).toFixed(3)} €/km</span>
@@ -427,7 +438,7 @@ export const PlannerService = {
              <div class="flex items-center justify-between gap-2 bg-slate-50/50 dark:bg-slate-950/40 p-2 rounded-xl border border-slate-100 dark:border-slate-850">
                <div class="flex-1 min-w-0">
                  <span class="text-[8px] text-slate-400 font-extrabold uppercase tracking-widest block mb-0.5">Départ</span>
-                 <span class="font-bold text-slate-800 dark:text-slate-100 text-[11px] truncate block" title="${m.from}">${m.from}</span>
+                 <span class="font-bold text-slate-800 dark:text-slate-100 text-[11px] truncate block" title="${escapeHtml(m.from)}">${escapeHtml(m.from)}</span>
                </div>
                <div class="flex flex-col items-center justify-center px-1 shrink-0">
                  <span class="text-[8px] text-slate-450 dark:text-slate-500 font-bold leading-none mb-1">${m.distance} km</span>
@@ -435,7 +446,7 @@ export const PlannerService = {
                </div>
                <div class="flex-1 min-w-0 text-right">
                  <span class="text-[8px] text-slate-400 font-extrabold uppercase tracking-widest block mb-0.5">Arrivée</span>
-                 <span class="font-bold text-slate-800 dark:text-slate-100 text-[11px] truncate block" title="${m.to}">${m.to}</span>
+                 <span class="font-bold text-slate-800 dark:text-slate-100 text-[11px] truncate block" title="${escapeHtml(m.to)}">${escapeHtml(m.to)}</span>
                </div>
              </div>
           </div>
@@ -446,7 +457,7 @@ export const PlannerService = {
             <div class="grid grid-cols-12 gap-2 flex-1 items-center">
                <div class="col-span-4 flex flex-col pl-1">
                  <span class="text-[9px] text-slate-400 font-extrabold uppercase tracking-widest mb-1.5 block">Départ</span>
-                 <span class="font-extrabold text-slate-850 dark:text-slate-100 text-[13px] md:text-sm truncate" title="${m.from}">${m.from}</span>
+                 <span class="font-extrabold text-slate-850 dark:text-slate-100 text-[13px] md:text-sm truncate" title="${escapeHtml(m.from)}">${escapeHtml(m.from)}</span>
                </div>
                
                <div class="col-span-4 flex flex-col items-center justify-center px-1 text-slate-300">
@@ -456,12 +467,12 @@ export const PlannerService = {
                     <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-slate-350 dark:text-slate-600 shrink-0"></i>
                     <div class="flex-1 border-t border-dashed border-slate-300 dark:border-slate-700"></div>
                   </div>
-                  <span class="text-[9px] font-black px-2 py-0.5 rounded mt-2 uppercase tracking-wide shrink-0 ${this.getBadgeColor(m.platform)}">${m.platform}</span>
+                  <span class="text-[9px] font-black px-2 py-0.5 rounded mt-2 uppercase tracking-wide shrink-0 ${this.getBadgeColor(m.platform)}">${escapeHtml(m.platform)}</span>
                </div>
 
                <div class="col-span-4 flex flex-col text-right pr-2">
                  <span class="text-[9px] text-slate-400 font-extrabold uppercase tracking-widest mb-1.5 block">Arrivée</span>
-                 <span class="font-extrabold text-slate-850 dark:text-slate-100 text-[13px] md:text-sm truncate" title="${m.to}">${m.to}</span>
+                 <span class="font-extrabold text-slate-850 dark:text-slate-100 text-[13px] md:text-sm truncate" title="${escapeHtml(m.to)}">${escapeHtml(m.to)}</span>
                </div>
             </div>
             

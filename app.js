@@ -19,6 +19,17 @@ window.PlannerService = PlannerService;
 window.InspectionService = InspectionService;
 window.ExportService = ExportService;
 
+function escapeHtml(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+window.escapeHtml = escapeHtml;
+
 // Intercepteur global Fetch pour injecter l'ID de session RBAC (X-Session-Token) dans toutes les requêtes
 const originalFetch = window.fetch;
 const customFetch = async function(url, options = {}) {
@@ -297,14 +308,37 @@ class ConvoyageApp {
       }
     }
 
-    // 2. Charger les missions (chargement initial et démo)
-    if (!localStorage.getItem('convoyage_manually_cleared_v3')) {
-      localStorage.setItem('convoyage_missions', JSON.stringify([]));
-      localStorage.setItem('convoyage_manually_cleared_v3', 'true');
-      this.missions = [];
-    } else {
-      this.missions = await StorageService.loadMissions();
+    const userRoleRaw = (this.currentUser && this.currentUser.role) ? this.currentUser.role.toUpperCase() : '';
+
+    // 2. Charger les missions (chargement initial et démo depuis le serveur)
+    let serverMissions = null;
+    try {
+      const response = await fetch('/api/missions/load-local');
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && Array.isArray(data.missions)) {
+          serverMissions = data.missions;
+        }
+      }
+    } catch (err) {
+      console.warn("Impossible de charger les missions depuis le serveur :", err);
     }
+
+    if (serverMissions && (serverMissions.length > 0 || userRoleRaw === 'ACCOUNTANT')) {
+      this.missions = serverMissions;
+      await StorageService.saveMissions(this.missions);
+    } else {
+      if (!localStorage.getItem('convoyage_manually_cleared_v3')) {
+        localStorage.setItem('convoyage_missions', JSON.stringify([]));
+        localStorage.setItem('convoyage_manually_cleared_v3', 'true');
+        this.missions = [];
+      } else {
+        this.missions = await StorageService.loadMissions();
+      }
+    }
+
+    // Ensure status is corrected for completed inspections immediately
+    await this.verifyCompletedInspections();
 
     // 3. Préparer les filtres dynamiques (liste des clients distincts)
     this.populateClientFilters();
@@ -317,9 +351,8 @@ class ConvoyageApp {
     if (defaultView === 'documents') {
       defaultView = 'account';
     }
-    const userRoleRaw = (this.currentUser && this.currentUser.role) ? this.currentUser.role.toUpperCase() : '';
     if (userRoleRaw === 'ACCOUNTANT') {
-      const blocked = ['planner', 'documents', 'settings', 'admin-users', 'admin-logs'];
+      const blocked = ['planner', 'documents', 'settings', 'admin-users', 'admin-logs', 'drive-synthesis'];
       if (blocked.includes(defaultView)) {
         defaultView = 'dashboard';
       }
@@ -341,6 +374,9 @@ class ConvoyageApp {
 
     DashboardService.showNotification(`Bonjour ${this.currentUser.fullname} (${this.currentUser.role === 'ADMIN' ? 'Admin' : 'Comptable'}). Sûreté validée !`, "success");
     document.body.classList.remove('overflow-hidden');
+    
+    // Boot the offline-first sync manager
+    this.startOfflineSyncManager();
   }
 
   /**
@@ -480,7 +516,7 @@ class ConvoyageApp {
     }
     const userRoleRaw = (this.currentUser && this.currentUser.role) ? this.currentUser.role.toUpperCase() : '';
     if (userRoleRaw === 'ACCOUNTANT') {
-      const blocked = ['planner', 'documents', 'settings', 'admin-users', 'admin-logs'];
+      const blocked = ['planner', 'documents', 'settings', 'admin-users', 'admin-logs', 'drive-synthesis'];
       if (blocked.includes(viewId)) {
         viewId = 'dashboard';
       }
@@ -729,6 +765,29 @@ class ConvoyageApp {
         timeText = `Commence dans ${Math.round(diff)}h`;
       }
 
+      // Calculer l'estimation de la durée
+      let durationText = '';
+      if (m.heureDepart && m.heureArrivee) {
+        try {
+          const [h1, m1] = m.heureDepart.split(':').map(Number);
+          const [h2, m2] = m.heureArrivee.split(':').map(Number);
+          if (!isNaN(h1) && !isNaN(m1) && !isNaN(h2) && !isNaN(m2)) {
+            let diffMin = (h2 * 60 + m2) - (h1 * 60 + m1);
+            if (diffMin < 0) diffMin += 1440;
+            const hrs = Math.floor(diffMin / 60);
+            const mins = diffMin % 60;
+            durationText = hrs === 0 ? `${mins} min` : `${hrs}h${String(mins).padStart(2, '0')}`;
+          }
+        } catch (e) {
+          console.error(e);
+        }
+      }
+      if (!durationText && m.dureeTrajet) {
+        const hrs = Math.floor(m.dureeTrajet / 60);
+        const mins = m.dureeTrajet % 60;
+        durationText = hrs === 0 ? `${mins} min` : `${hrs}h${String(mins).padStart(2, '0')}`;
+      }
+
       const dateFormatted = new Date(m.date).toLocaleDateString('fr-FR', {
         weekday: 'short',
         day: 'numeric',
@@ -755,7 +814,7 @@ class ConvoyageApp {
           <div class="flex items-center justify-between sm:justify-end gap-3.5 w-full sm:w-auto border-t sm:border-t-0 border-slate-100 dark:border-slate-800 pt-2 sm:pt-0">
             <div class="text-left sm:text-right">
               <div class="text-[10px] font-black uppercase tracking-wider text-amber-600 dark:text-amber-400 font-sans">${timeText}</div>
-              <div class="text-[10px] text-slate-400 font-bold font-mono">${dateFormatted} • ${m.heureDepart || '00:00'}</div>
+              <div class="text-[10px] text-slate-400 font-bold font-mono">${dateFormatted} • ${m.heureDepart || '00:00'}${m.heureArrivee ? ` ➔ ${m.heureArrivee}` : ''}${durationText ? ` (${durationText})` : ''}</div>
             </div>
             <button class="text-[11px] bg-slate-100 hover:bg-indigo-50 dark:bg-slate-800 dark:hover:bg-indigo-950/30 text-slate-700 hover:text-indigo-600 dark:text-slate-300 dark:hover:text-indigo-400 font-black px-3 py-1.5 rounded-lg border border-transparent hover:border-indigo-100 dark:hover:border-indigo-900/30 transition-all flex items-center gap-1 active:scale-95 cursor-pointer" onclick="window.app.handleRowAction('edit', '${m.id}')">
               <i data-lucide="eye" class="w-3.5 h-3.5"></i> Détails
@@ -839,10 +898,22 @@ class ConvoyageApp {
       method: 'POST',
       headers: pushHeaders,
       body: JSON.stringify({ missions: this.missions })
-    }).catch(err => console.error("Error saving local copy to backend:", err));
+    }).then(res => {
+      if (!res.ok) throw new Error("Server error");
+    }).catch(err => {
+      console.warn("Local copy to backend failed (usually offline/low connection):", err);
+      localStorage.setItem('drive_backup_pending', 'true');
+    });
 
     if (saved && this.googleDriveToken) {
-      this.backupToDrive(this.googleDriveToken, false);
+      try {
+        await this.backupToDrive(this.googleDriveToken, false);
+      } catch (err) {
+        console.warn("Google Drive background backup failed (usually offline/low connection):", err);
+        localStorage.setItem('drive_backup_pending', 'true');
+      }
+    } else if (saved) {
+      localStorage.setItem('drive_backup_pending', 'true');
     }
     return saved;
   }
@@ -1392,11 +1463,84 @@ class ConvoyageApp {
       const data = await res.json();
       if (res.ok && data.success) {
         console.log(`Mission ${mission.id} sauvegardée automatiquement sur Google Drive dans ${data.path}`);
+        return true;
       } else {
         throw new Error(data.error || "Échecs de l'upload");
       }
     } catch (err) {
       console.error("Erreur de sauvegarde automatique sur Google Drive:", err);
+      return false;
+    }
+  }
+
+  /**
+   * Offline-First: starts dynamic network monitoring and schedules interval checks
+   */
+  startOfflineSyncManager() {
+    this.onlineStatus = navigator.onLine;
+
+    // Monitor browser online/offline events
+    window.addEventListener('online', () => {
+      console.log("[SyncManager] Browser is back online. Attempting synchronization.");
+      this.onlineStatus = true;
+      this.processSyncQueue();
+    });
+
+    window.addEventListener('offline', () => {
+      console.log("[SyncManager] Connection lost. Saving changes locally first.");
+      this.onlineStatus = false;
+    });
+
+    // Periodically retry sync queue even if online event didn't fire (low connection mode)
+    setInterval(() => {
+      if (navigator.onLine && localStorage.getItem('drive_backup_pending') === 'true') {
+        console.log("[SyncManager] Background timer triggered sync check.");
+        this.processSyncQueue();
+      }
+    }, 30000); // 30 seconds interval
+
+    // Initial check
+    if (navigator.onLine && localStorage.getItem('drive_backup_pending') === 'true') {
+      this.processSyncQueue();
+    }
+  }
+
+  /**
+   * Attempts to process the background pending synchronization queue
+   */
+  async processSyncQueue() {
+    if (!this.googleDriveToken) {
+      console.log("[SyncManager] Sync deferred: Google Drive is not connected yet.");
+      return;
+    }
+
+    try {
+      console.log("[SyncManager] Triggering pending Drive backup sync...");
+      const localMissions = await StorageService.loadMissions();
+      const localSettings = StorageService.loadSettings();
+
+      const res = await fetch('/api/drive/save-app-data', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.googleDriveToken}`
+        },
+        body: JSON.stringify({
+          missions: localMissions,
+          settings: localSettings
+        })
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success) {
+          console.log("[SyncManager] Pending sync uploaded successfully!");
+          localStorage.removeItem('drive_backup_pending');
+          DashboardService.showNotification("Synchronisation arrière-plan réussie sur Google Drive !", "success");
+        }
+      }
+    } catch (err) {
+      console.warn("[SyncManager] Sync failed. Will retry later.", err);
     }
   }
 
@@ -1611,8 +1755,8 @@ class ConvoyageApp {
         `;
       } else {
         suggestionsBox.innerHTML = filtered.map(immat => `
-          <div class="px-3.5 py-2 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 text-xs font-mono font-medium cursor-pointer transition-colors border-b border-slate-50/50 dark:border-slate-800/10 last:border-0 text-slate-700 dark:text-slate-300 flex items-center justify-between" data-suggestion="${immat}">
-            <span>${immat}</span>
+          <div class="px-3.5 py-2 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 text-xs font-mono font-medium cursor-pointer transition-colors border-b border-slate-50/50 dark:border-slate-800/10 last:border-0 text-slate-700 dark:text-slate-300 flex items-center justify-between" data-suggestion="${escapeHtml(immat)}">
+            <span>${escapeHtml(immat)}</span>
             <span class="text-[9px] font-sans font-bold px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-450 dark:text-slate-500 rounded">Plaque</span>
           </div>
         `).join('');
@@ -2162,6 +2306,7 @@ class ConvoyageApp {
       this.googleDriveToken = token;
       this.updateDriveSyncUI(token);
       await this.autoSyncDrive(token);
+      await this.verifyCompletedInspections();
     });
 
     window.addEventListener('google-drive-lost', () => {
@@ -2278,6 +2423,41 @@ class ConvoyageApp {
       this.googleDriveToken = window.googleDriveAccessToken;
       this.updateDriveSyncUI(this.googleDriveToken);
       this.autoSyncDrive(this.googleDriveToken);
+      this.verifyCompletedInspections();
+    }
+  }
+
+  /**
+   * Make sure the "Rapport d'État des Lieux" mission is complete and change the status so that the second "Rapport d'État des Lieux" is not made.
+   * Checks if the status of the "Rapport d'État des Lieux" mission is complete.
+   * Checks if the "Rapport d'État des Lieux" mission is uploaded to Google Drive. If not, upload it.
+   */
+  async verifyCompletedInspections() {
+    let needsSave = false;
+    for (let mission of this.missions) {
+      if (mission.inspection && mission.inspection.status === 'Validée') {
+        if (mission.statut !== 'Terminée') {
+          mission.statut = 'Terminée';
+          needsSave = true;
+        }
+        if (!mission.driveSaved && this.googleDriveToken) {
+          try {
+            const uploaded = await this.uploadMissionToDrive(mission, this.googleDriveToken);
+            if (uploaded) {
+              mission.driveSaved = true;
+              needsSave = true;
+            }
+          } catch(err) {
+            console.warn("Auto-upload validée mission failed:", err);
+          }
+        }
+      }
+    }
+    if (needsSave) {
+      await this.saveMissions();
+      if (typeof this.refreshUI === 'function') {
+         this.refreshUI();
+      }
     }
   }
 
@@ -2314,7 +2494,7 @@ class ConvoyageApp {
       document.body.classList.add('is-accountant');
 
       // Hide desktop nav items
-      const restrictedDesktop = ['nav_planner', 'nav_settings'];
+      const restrictedDesktop = ['nav_planner', 'nav_settings', 'nav_drive_synthesis', 'btn_top_drive_synthesis'];
       restrictedDesktop.forEach(id => {
         const el = document.getElementById(id);
         if (el) el.classList.add('hidden');
@@ -2352,7 +2532,7 @@ class ConvoyageApp {
     } else {
       document.body.classList.remove('is-accountant');
       
-      const unrestricted = ['nav_planner', 'nav_settings'];
+      const unrestricted = ['nav_planner', 'nav_settings', 'nav_drive_synthesis', 'btn_top_drive_synthesis'];
       unrestricted.forEach(id => {
         const el = document.getElementById(id);
         if (el) el.classList.remove('hidden');
@@ -3883,9 +4063,55 @@ class ConvoyageApp {
   }
 }
 
+/**
+ * Dynamic Resizing Utility for Logo elements to scale proportionately based on container width.
+ * Prevents overflow by dynamically applying CSS max-width rules and measuring actual client width constraints.
+ */
+function initLogoResizer() {
+  const containers = document.querySelectorAll('.logo-long-container, .logo-short-container');
+  if (containers.length === 0) return;
+
+  const resizeObserver = new ResizeObserver((entries) => {
+    for (const entry of entries) {
+      const container = entry.target;
+      const width = entry.contentRect.width || container.getBoundingClientRect().width;
+      const images = container.querySelectorAll('img, svg');
+      
+      images.forEach(img => {
+        if (container.classList.contains('logo-long-container')) {
+          const maxW = 400;
+          if (width < maxW && width > 0) {
+            img.style.width = '100%';
+            img.style.height = 'auto';
+            img.style.maxWidth = `${width}px`;
+          } else {
+            img.style.width = '400px';
+            img.style.maxWidth = '100%';
+          }
+        } else if (container.classList.contains('logo-short-container')) {
+          const maxW = container.dataset.maxWidth ? parseInt(container.dataset.maxWidth, 10) : 150;
+          if (width < maxW && width > 0) {
+            img.style.width = '100%';
+            img.style.height = 'auto';
+            img.style.maxWidth = `${width}px`;
+          } else {
+            img.style.width = `${maxW}px`;
+            img.style.maxWidth = '100%';
+          }
+        }
+      });
+    }
+  });
+
+  containers.forEach(container => {
+    resizeObserver.observe(container);
+  });
+}
+
 // Lancer l'application de convoyage au montage du DOM !
 document.addEventListener('DOMContentLoaded', () => {
   const app = new ConvoyageApp();
   window.app = app;
   app.init();
+  initLogoResizer();
 });

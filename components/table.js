@@ -7,6 +7,17 @@ export const TableService = {
   currentPage: 1,
   pageSize: 10,
   
+  escapeHtml(str) {
+    if (window.escapeHtml) return window.escapeHtml(str);
+    if (str === null || str === undefined) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  },
+  
   /**
    * Calcule le nombre de minutes en heures/minutes intelligentes
    *@param {number} minutes 
@@ -17,6 +28,39 @@ export const TableService = {
     const mins = minutes % 60;
     if (hrs === 0) return `${mins} min`;
     return `${hrs}h${String(mins).padStart(2, '0')}`;
+  },
+
+  /**
+   * Calcule et formate la durée du trajet en heure/minutes à partir de l'heure de départ et d'arrivée
+   */
+  getCalculatedDuration(heureDepart, heureArrivee) {
+    if (!heureDepart || !heureArrivee) return '';
+    try {
+      const startParts = heureDepart.split(':');
+      const endParts = heureArrivee.split(':');
+      if (startParts.length < 2 || endParts.length < 2) return '';
+
+      const startMin = parseInt(startParts[0], 10) * 60 + parseInt(startParts[1], 10);
+      let endMin = parseInt(endParts[0], 10) * 60 + parseInt(endParts[1], 10);
+
+      if (isNaN(startMin) || isNaN(endMin)) return '';
+
+      if (endMin < startMin) {
+        // Passage de minuit
+        endMin += 24 * 60;
+      }
+
+      const diffMin = endMin - startMin;
+      const hrs = Math.floor(diffMin / 60);
+      const mins = diffMin % 60;
+
+      if (hrs === 0) {
+        return `${mins} min`;
+      }
+      return `${hrs}h${String(mins).padStart(2, '0')}`;
+    } catch (e) {
+      return '';
+    }
   },
 
   /**
@@ -249,8 +293,8 @@ export const TableService = {
             <!-- 3. Véhicule & Immatriculation -->
             <td class="px-3 py-3.5">
               <div class="flex flex-col">
-                <span class="font-extrabold text-slate-900 dark:text-white leading-tight">${m.vehicle}</span>
-                <span class="font-mono text-[10px] bg-slate-50 dark:bg-slate-900 text-slate-600 dark:text-slate-405 px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-805 w-fit mt-1">${m.immatriculation}</span>
+                <span class="font-extrabold text-slate-900 dark:text-white leading-tight">${this.escapeHtml(m.vehicle)}</span>
+                <span class="font-mono text-[10px] bg-slate-50 dark:bg-slate-900 text-slate-600 dark:text-slate-405 px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-805 w-fit mt-1">${this.escapeHtml(m.immatriculation)}</span>
               </div>
             </td>
 
@@ -258,13 +302,13 @@ export const TableService = {
             <td class="px-3 py-3.5">
               <div class="flex flex-col">
                 <div class="flex items-center gap-1 text-slate-800 dark:text-slate-200 font-extrabold leading-snug">
-                  <span>${m.depart}</span>
+                  <span>${this.escapeHtml(m.depart)}</span>
                   <span class="text-slate-350 dark:text-slate-600">➔</span>
-                  <span>${m.destination}</span>
+                  <span>${this.escapeHtml(m.destination)}</span>
                 </div>
                 <div class="flex items-center gap-1.5 text-[10px] text-slate-400 font-mono mt-1 font-bold">
                   <span>⏱ ${m.heureDepart || '00:00'} - ${m.heureArrivee || '00:00'}</span>
-                  <span>(${this.formatDuration(m.dureeTrajet)})</span>
+                  <span>(${this.getCalculatedDuration(m.heureDepart, m.heureArrivee) || this.formatDuration(m.dureeTrajet)})</span>
                 </div>
               </div>
             </td>
@@ -277,7 +321,7 @@ export const TableService = {
             <!-- 6. Prestate (Plateforme) -->
             <td class="px-3 py-3.5">
               <span class="px-2 py-0.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-extrabold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                ${m.plateforme}
+                ${this.escapeHtml(m.plateforme)}
               </span>
             </td>
 
@@ -323,6 +367,7 @@ export const TableService = {
         
         const dayLabel = m.date ? new Date(m.date).toLocaleDateString('fr-FR', { weekday: 'short' }) : '';
         const dateFormatted = m.date ? new Date(m.date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' }) : '';
+        const durationText = this.getCalculatedDuration(m.heureDepart, m.heureArrivee);
 
         const s = (m.statut || 'En attente').toLowerCase().trim();
         let statusDotColor = 'bg-gray-400 ring-gray-450/20';
@@ -371,16 +416,16 @@ export const TableService = {
               </div>
               <div class="flex items-center gap-1 text-[10px]">
                 ${m.driveSaved ? `<span class="bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400 px-1.5 py-0.5 rounded font-black border border-emerald-100/30">Drive</span>` : ''}
-                <span class="bg-slate-50 dark:bg-slate-900 text-slate-500 dark:text-slate-400 px-1.5 py-0.5 rounded font-bold border border-slate-100 dark:border-slate-800 uppercase">${m.plateforme}</span>
+                <span class="bg-slate-50 dark:bg-slate-900 text-slate-500 dark:text-slate-400 px-1.5 py-0.5 rounded font-bold border border-slate-100 dark:border-slate-800 uppercase">${this.escapeHtml(m.plateforme)}</span>
               </div>
             </div>
 
             <!-- Deuxième ligne : Véhicule & Bénéfice Net -->
             <div class="flex items-start justify-between pl-1">
               <div>
-                <h4 class="font-extrabold text-slate-900 dark:text-white text-sm">${m.vehicle}</h4>
+                <h4 class="font-extrabold text-slate-900 dark:text-white text-sm">${this.escapeHtml(m.vehicle)}</h4>
                 <div class="flex items-center gap-1.5 mt-1">
-                  <span class="font-mono text-[10px] bg-slate-50 dark:bg-slate-900/50 text-slate-600 dark:text-slate-300 px-1 py-0.5 rounded border border-slate-150 dark:border-slate-800">${m.immatriculation}</span>
+                  <span class="font-mono text-[10px] bg-slate-50 dark:bg-slate-900/50 text-slate-600 dark:text-slate-300 px-1 py-0.5 rounded border border-slate-150 dark:border-slate-800">${this.escapeHtml(m.immatriculation)}</span>
                   <span class="text-[11px] font-bold text-slate-405">${m.kilometrage} km</span>
                 </div>
               </div>
@@ -393,13 +438,13 @@ export const TableService = {
             <!-- Troisième ligne : Itinéraire compacté ultra-pro -->
             <div class="bg-slate-50/60 dark:bg-slate-900/30 p-2 rounded-lg border border-slate-100/50 dark:border-slate-800 text-[11px] dark:text-slate-300 flex items-center justify-between gap-1.5">
               <div class="flex items-center gap-1 overflow-hidden truncate">
-                <span class="font-bold text-slate-800 dark:text-slate-200 truncate">${m.depart}</span>
+                <span class="font-bold text-slate-800 dark:text-slate-200 truncate">${this.escapeHtml(m.depart)}</span>
                 <span class="text-slate-400">➔</span>
-                <span class="font-bold text-slate-800 dark:text-slate-200 truncate">${m.destination}</span>
+                <span class="font-bold text-slate-800 dark:text-slate-200 truncate">${this.escapeHtml(m.destination)}</span>
               </div>
               <div class="flex items-center gap-1 divide-x divide-slate-200 dark:divide-slate-800">
-                <span class="font-mono text-[9px] text-slate-400 font-bold whitespace-nowrap pl-1">${m.heureDepart || '00'}➔${m.heureArrivee || '00'}</span>
-                <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(m.destination)}" target="_blank" rel="noopener noreferrer" class="text-[10px] font-black text-indigo-500 hover:text-indigo-600 pl-1">GPS</a>
+                <span class="font-mono text-[9px] text-slate-400 font-bold whitespace-nowrap pl-1">${m.heureDepart || '00:00'}➔${m.heureArrivee || '00:00'}${durationText ? ` (${durationText})` : ''}</span>
+                <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(m.destination)}" target="_blank" rel="noopener noreferrer" class="text-[10px] font-black text-indigo-505 hover:text-indigo-600 pl-1">GPS</a>
               </div>
             </div>
 
@@ -526,10 +571,10 @@ export const TableService = {
           <span class="text-[10px] uppercase font-black tracking-widest text-slate-400">Véhicule</span>
           ${statusLine}
         </div>
-        <h4 class="text-lg font-black text-slate-850 dark:text-white leading-tight">${m.vehicle}</h4>
+        <h4 class="text-lg font-black text-slate-850 dark:text-white leading-tight">${this.escapeHtml(m.vehicle)}</h4>
         <div class="flex items-center gap-2">
-          <span class="font-mono text-xs font-bold bg-slate-200/60 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-2 py-0.5 rounded border border-slate-300 dark:border-slate-700">${m.immatriculation}</span>
-          <span class="text-xs font-bold text-slate-500">• ${m.kilometrage} km • Presta: ${m.plateforme}</span>
+          <span class="font-mono text-xs font-bold bg-slate-200/60 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-2 py-0.5 rounded border border-slate-300 dark:border-slate-700">${this.escapeHtml(m.immatriculation)}</span>
+          <span class="text-xs font-bold text-slate-500">• ${m.kilometrage} km • Presta: ${this.escapeHtml(m.plateforme)}</span>
         </div>
       </div>
 
@@ -541,14 +586,14 @@ export const TableService = {
           <div class="relative">
             <span class="absolute -left-[26px] top-1 w-3 h-3 rounded-full bg-indigo-600 border-2 border-white dark:border-[#111827]"></span>
             <span class="text-[10px] text-slate-400 uppercase font-black tracking-wider">Origine</span>
-            <p class="text-sm font-bold text-slate-800 dark:text-slate-200">${m.depart}</p>
+            <p class="text-sm font-bold text-slate-800 dark:text-slate-200">${this.escapeHtml(m.depart)}</p>
             <p class="text-xs font-mono font-bold text-indigo-600 dark:text-indigo-400 mt-1">⏱ ${m.heureDepart || 'Non renseigné'}</p>
           </div>
           <!-- Arrivée -->
           <div class="relative">
             <span class="absolute -left-[26px] top-1 w-3 h-3 rounded-full bg-emerald-600 border-2 border-white dark:border-[#111827]"></span>
             <span class="text-[10px] text-slate-400 uppercase font-black tracking-wider">Destination</span>
-            <p class="text-sm font-bold text-slate-800 dark:text-slate-200">${m.destination}</p>
+            <p class="text-sm font-bold text-slate-800 dark:text-slate-200">${this.escapeHtml(m.destination)}</p>
             <p class="text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400 mt-1">⏱ ${m.heureArrivee || 'Non de renseigné'}</p>
           </div>
         </div>

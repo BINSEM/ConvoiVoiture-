@@ -6,3 +6,6 @@ coverage/
 *.log
 .env*
 !.env.example
+data/rbac_db.json
+data/rbac_db_backup.json
+data/sample-data.json

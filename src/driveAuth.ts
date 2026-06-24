@@ -89,7 +89,6 @@ setPersistence(auth, browserLocalPersistence).catch(console.error);
 const provider = new GoogleAuthProvider();
 // Request Workspace Drive scopes
 provider.addScope('https://www.googleapis.com/auth/drive.file');
-provider.addScope('https://www.googleapis.com/auth/drive');
 
 let isSigningIn = false;
 
