@@ -418,6 +418,18 @@ async function startServer() {
     return res.json({ success: true, logs });
   });
 
+  // Add Audit Log
+  app.post("/api/admin/add-log", authenticate, (req: any, res) => {
+    try {
+      const { action, details } = req.body;
+      DbService.addLog(action || 'USER_ACTION', req.user.username, details || '');
+      return res.json({ success: true });
+    } catch (err: any) {
+      console.error("Error adding log:", err);
+      return res.status(500).json({ success: false, error: err.message || "Failed to add log" });
+    }
+  });
+
   // Save missions locally to fallback sample-data.json
   app.post("/api/missions/save-local", authenticate, requireRole(["ADMIN"]), (req: any, res) => {
     try {
@@ -924,6 +936,56 @@ async function startServer() {
           media: media,
           fields: "id"
         });
+      }
+
+      // If this is a mission JSON, update the month synthesis file
+      if (filename.startsWith("Mission_") && filename.endsWith(".json") && req.file.mimetype === "application/json") {
+        try {
+          const missionData = JSON.parse(req.file.buffer.toString("utf-8"));
+          const dataFolderId = await getOrCreateFolder(drive, "Data", monthId);
+          const monthFileName = `missions-${year}-${month}.json`;
+          const mQ = `name = '${monthFileName}' and '${dataFolderId}' in parents and trashed = false`;
+          
+          const mList = await drive.files.list({
+            q: mQ,
+            spaces: "drive",
+            fields: "files(id, name)",
+            pageSize: 1
+          });
+          
+          let monthMissions: any[] = [];
+          let monthFileId = "";
+          
+          if (mList.data.files && mList.data.files.length > 0) {
+            monthFileId = mList.data.files[0].id!;
+            const mContent = await drive.files.get({ fileId: monthFileId, alt: "media" }, { responseType: "text" });
+            const pData = typeof mContent.data === "string" ? JSON.parse(mContent.data) : mContent.data;
+            monthMissions = Array.isArray(pData) ? pData : [];
+          }
+          
+          const existingIdx = monthMissions.findIndex(m => m.id === missionData.id);
+          if (existingIdx !== -1) {
+            monthMissions[existingIdx] = missionData;
+          } else {
+            monthMissions.push(missionData);
+          }
+          
+          const mMedia = {
+            mimeType: "application/json",
+            body: Readable.from(JSON.stringify(monthMissions, null, 2))
+          };
+          
+          if (monthFileId) {
+            await drive.files.update({ fileId: monthFileId, media: mMedia });
+          } else {
+            await drive.files.create({
+              requestBody: { name: monthFileName, mimeType: "application/json", parents: [dataFolderId] },
+              media: mMedia
+            });
+          }
+        } catch (err) {
+          console.error("Error updating monthly synthesis file:", err);
+        }
       }
 
       return res.json({

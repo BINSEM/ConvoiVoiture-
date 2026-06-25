@@ -11,19 +11,21 @@ export function useContainerSize(ref: React.RefObject<HTMLElement | null>) {
     if (!ref.current) return;
 
     const observer = new ResizeObserver((entries) => {
-      for (const entry of entries) {
-        if (entry.contentBoxSize && entry.contentBoxSize[0]) {
-          setSize({
-            width: entry.contentBoxSize[0].inlineSize,
-            height: entry.contentBoxSize[0].blockSize,
-          });
-        } else {
-          setSize({
-            width: entry.contentRect.width,
-            height: entry.contentRect.height,
-          });
+      window.requestAnimationFrame(() => {
+        for (const entry of entries) {
+          if (entry.contentBoxSize && entry.contentBoxSize[0]) {
+            setSize({
+              width: entry.contentBoxSize[0].inlineSize,
+              height: entry.contentBoxSize[0].blockSize,
+            });
+          } else {
+            setSize({
+              width: entry.contentRect.width,
+              height: entry.contentRect.height,
+            });
+          }
         }
-      }
+      });
     });
 
     observer.observe(ref.current);

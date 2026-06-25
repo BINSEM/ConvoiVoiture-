@@ -298,6 +298,27 @@ export const InspectionService = {
         el.textContent = value;
       }
     }
+    
+    const titleContainer = document.getElementById("ins_success_title_container");
+    const titleText = document.getElementById("ins_success_title");
+    const iconEl = document.getElementById("ins_success_icon");
+    const descText = document.getElementById("ins_success_description_text");
+    if (titleContainer && titleText && iconEl) {
+      if (mission.statut === "Annulée") {
+        titleContainer.className = "flex items-center gap-2.5 text-rose-600 dark:text-rose-400 font-extrabold text-base uppercase border-b border-rose-100 dark:border-rose-900/30 pb-2";
+        iconEl.setAttribute("data-lucide", "x-circle");
+        iconEl.className = "w-6 h-6 text-rose-500 animate-bounce";
+        titleText.textContent = "Mission Annulée";
+        if (descText) descText.textContent = "Le rapport d'annulation a été généré et sera synchronisé avec vos dossiers. Détails archivés :";
+      } else {
+        titleContainer.className = "flex items-center gap-2.5 text-emerald-600 dark:text-emerald-400 font-extrabold text-base uppercase border-b border-emerald-100 dark:border-emerald-900/30 pb-2";
+        iconEl.setAttribute("data-lucide", "check-circle");
+        iconEl.className = "w-6 h-6 text-emerald-500 animate-bounce";
+        titleText.textContent = "Convoyage Mandat Clôturé !";
+        if (descText) descText.textContent = "Le rapport final de mission a été généré. Les informations clés sont archivées localement :";
+      }
+      if (window.lucide) window.lucide.createIcons();
+    }
 
     let report = `DÉTAILS DE LA MISSION DE CONVOYAGE :\n`;
     report += `---------------------------------------\n`;
@@ -377,6 +398,9 @@ export const InspectionService = {
     if (mission.inspection && mission.inspection.contractPhoto) {
       allPhotos.push(mission.inspection.contractPhoto);
     }
+    if (mission.cancelContractPhoto) {
+      allPhotos.push(mission.cancelContractPhoto);
+    }
 
     if (allPhotos.length > 0) {
       allPhotos.forEach((url, i) => {
@@ -393,6 +417,9 @@ export const InspectionService = {
           if (url === mission.inspection.depositReceiptPhoto)
             label = "Reçu Caution";
           if (url === mission.inspection.contractPhoto) label = "Contrat";
+        }
+        if (url === mission.cancelContractPhoto) {
+          label = "Contrat Annulation";
         }
 
         imgDiv.innerHTML = `
@@ -467,6 +494,158 @@ export const InspectionService = {
     // Revoke object URLs
     this.photosObjUrl.forEach(URL.revokeObjectURL);
     this.photosObjUrl = [];
+  },
+
+  toggleCancelDropdown() {
+    const dropdown = document.getElementById("ins_cancel_inline_dropdown");
+    if (dropdown) {
+      if (dropdown.classList.contains("hidden")) {
+        dropdown.classList.remove("hidden");
+        dropdown.classList.add("flex");
+        document.getElementById("ins_cancel_reason_select_inline").value = "";
+        document.getElementById("ins_cancel_reason_other_inline").value = "";
+        
+        const commentsField = document.getElementById("ins_cancel_comments_inline");
+        if (commentsField) commentsField.value = "";
+        
+        this.cancelContractPhoto = null;
+        const preview = document.getElementById("ins_cancel_contract_preview");
+        const placeholder = document.getElementById("ins_cancel_contract_placeholder");
+        if (preview) {
+          preview.src = "";
+          preview.classList.add("hidden");
+        }
+        if (placeholder) placeholder.classList.remove("hidden");
+        
+        this.onCancelReasonChangeInline();
+        this.validateCancelMissionInline();
+      } else {
+        dropdown.classList.add("hidden");
+        dropdown.classList.remove("flex");
+      }
+    }
+  },
+
+  validateCancelMissionInline() {
+    const select = document.getElementById("ins_cancel_reason_select_inline");
+    const otherInput = document.getElementById("ins_cancel_reason_other_inline");
+    const btn = document.getElementById("ins_btn_confirm_cancel");
+    if (!select || !otherInput || !btn) return;
+
+    let isValid = true;
+    let reason = select.value;
+    if (!reason) {
+      isValid = false;
+    } else if (reason === "Autre") {
+      if (!otherInput.value.trim()) {
+        isValid = false;
+      }
+    }
+
+    if (!this.cancelContractPhoto) {
+      isValid = false;
+    }
+
+    btn.disabled = !isValid;
+  },
+
+  onCancelReasonChangeInline() {
+    const select = document.getElementById("ins_cancel_reason_select_inline");
+    const otherInput = document.getElementById("ins_cancel_reason_other_inline");
+    if (select.value === "Autre") {
+      otherInput.classList.remove("hidden");
+    } else {
+      otherInput.classList.add("hidden");
+    }
+    this.validateCancelMissionInline();
+  },
+
+  viewCancelContractPhoto() {
+    this.askPhotoSource('cancel_contract');
+  },
+
+  async confirmCancelMissionInline() {
+    const select = document.getElementById("ins_cancel_reason_select_inline");
+    const otherInput = document.getElementById("ins_cancel_reason_other_inline");
+    const commentsInput = document.getElementById("ins_cancel_comments_inline");
+    
+    let reason = select.value;
+    if (reason === "Autre") {
+      reason = otherInput.value.trim();
+    }
+    
+    if (!reason) {
+      if (window.DashboardService) {
+        window.DashboardService.showNotification("Veuillez spécifier la raison de l'annulation.", "error");
+      }
+      return;
+    }
+    
+    // Process cancellation
+    const mission = this._getMission(this.activeMissionId);
+    if (!mission) return;
+    
+    if (window.DashboardService) {
+      window.DashboardService.showNotification("Annulation de la mission en cours...", "info");
+    }
+    
+    mission.statut = "Annulée";
+    mission.cancelReason = reason;
+    mission.cancelComments = commentsInput ? commentsInput.value.trim() : "";
+    mission.cancelContractPhoto = this.cancelContractPhoto;
+    mission.inspection = mission.inspection || {};
+    mission.inspection.status = "Annulée";
+    mission.inspection.date = new Date().toISOString();
+    
+    if (!mission.immatriculation) {
+      mission.immatriculation = "SANS_PLAQUE";
+    }
+    
+    // Update local cache
+    if (window.app && window.app.missions) {
+      const idx = window.app.missions.findIndex((m) => m.id === mission.id);
+      if (idx !== -1) {
+        window.app.missions[idx] = mission;
+      }
+      if (typeof window.app.saveMissions === 'function') {
+        window.app.saveMissions();
+      }
+    }
+    
+    // Save to server/drive
+    if (typeof window.app?.uploadMissionToDrive === "function") {
+      await window.app.uploadMissionToDrive(mission, window.app.googleDriveToken);
+    }
+    
+    // Log the cancellation
+    try {
+      await fetch('/api/admin/add-log', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${window.googleDriveAccessToken || window.app?.googleDriveToken || ''}`
+        },
+        body: JSON.stringify({
+          action: 'MISSION_CANCEL',
+          details: `Mission ${mission.id} annulée. Motif : ${reason}`
+        })
+      });
+    } catch (e) {
+      console.error("Error logging mission cancellation:", e);
+    }
+
+    // Also upload photos and report text
+    // (This is now handled automatically by showSuccessModal's auto-trigger mechanism)
+    
+    if (window.DashboardService) {
+      window.DashboardService.showNotification("Mission annulée avec succès.", "success");
+    }
+    if (window.app && typeof window.app.refreshUI === 'function') {
+      window.app.refreshUI();
+    }
+    
+    this.toggleCancelDropdown();
+    this.showSuccessModal(mission);
   },
 
   askPhotoSource(target = "damage") {
@@ -1124,6 +1303,24 @@ export const InspectionService = {
               "success",
             );
           }
+        } else if (this.activeCameraTarget === "cancel_contract") {
+          this.cancelContractPhoto = dataUrl;
+          const preview = document.getElementById("ins_cancel_contract_preview");
+          const placeholder = document.getElementById("ins_cancel_contract_placeholder");
+          if (preview) {
+            preview.src = dataUrl;
+            preview.classList.remove("hidden");
+          }
+          if (placeholder) placeholder.classList.add("hidden");
+
+          this.validateCancelMissionInline();
+
+          if (window.DashboardService) {
+            window.DashboardService.showNotification(
+              "Photo du contrat enregistrée !",
+              "success",
+            );
+          }
         } else {
           const container = document.getElementById(
             "ins_photo_preview_container",
@@ -1457,6 +1654,16 @@ export const InspectionService = {
           previewContract.classList.remove("hidden");
         }
         if (placeholderContract) placeholderContract.classList.add("hidden");
+      } else if (type === "cancel_contract") {
+        this.cancelContractPhoto = dataUrl;
+        const previewContract = document.getElementById("ins_cancel_contract_preview");
+        const placeholderContract = document.getElementById("ins_cancel_contract_placeholder");
+        if (previewContract) {
+          previewContract.src = dataUrl;
+          previewContract.classList.remove("hidden");
+        }
+        if (placeholderContract) placeholderContract.classList.add("hidden");
+        this.validateCancelMissionInline();
       } else {
         this.dashPhotoArr = dataUrl;
         const previewArr = document.getElementById("ins_preview_dash_arr");
@@ -1475,6 +1682,7 @@ export const InspectionService = {
         if (type === "arr") label = "tableau de bord (Arrivée)";
         if (type === "deposit_receipt") label = "reçu de caution";
         if (type === "contract") label = "contrat de convoyage";
+        if (type === "cancel_contract") label = "contrat d'annulation";
         window.DashboardService.showNotification(
           `Photo de ${label} enregistrée avec horodatage !`,
           "success",
@@ -1749,6 +1957,11 @@ export const InspectionService = {
     }
     if (this.activeCameraTarget === "contract") {
       this.handleDashPhoto(evt.target, "contract");
+      evt.target.value = "";
+      return;
+    }
+    if (this.activeCameraTarget === "cancel_contract") {
+      this.handleDashPhoto(evt.target, "cancel_contract");
       evt.target.value = "";
       return;
     }
@@ -2520,6 +2733,13 @@ export const InspectionService = {
       reportContent += `---------------------------------------\n`;
       reportContent += `Véhicule: ${mission.vehicle || mission.modele || "N/A"}\n`;
       reportContent += `Immatriculation: ${mission.immatriculation || "N/A"}\n`;
+      reportContent += `Statut: ${mission.statut || "N/A"}\n`;
+      if (mission.statut === "Annulée") {
+        reportContent += `Raison d'annulation: ${mission.cancelReason || "N/A"}\n`;
+        if (mission.cancelComments) {
+          reportContent += `Commentaires annulation: ${mission.cancelComments}\n`;
+        }
+      }
       reportContent += `Trajet de convoyage: ${mission.depart || "N/A"} ➔ ${mission.destination || "N/A"}\n`;
       reportContent += `Plateforme: ${mission.plateforme || "N/A"}\n`;
       reportContent += `Commission / Gain: ${mission.gain || 0} €\n`;
@@ -2694,6 +2914,7 @@ export const InspectionService = {
           prefix: "Recu_Caution",
         },
         { url: mission.inspection?.contractPhoto, prefix: "Contrat_Convoyage" },
+        { url: mission.cancelContractPhoto, prefix: "Contrat_Annulation" },
       ];
       for (const tdb of extraPhotos) {
         if (tdb.url) {
@@ -2782,7 +3003,9 @@ export const InspectionService = {
       const missionIndex = app.missions.findIndex((m) => m.id === mission.id);
       if (missionIndex !== -1) {
         app.missions[missionIndex].driveSaved = true;
-        app.missions[missionIndex].statut = "Terminée";
+        if (app.missions[missionIndex].statut !== "Annulée") {
+          app.missions[missionIndex].statut = "Terminée";
+        }
         app.saveMissions();
         if (window.app && window.app.refreshUI) {
           window.app.refreshUI();

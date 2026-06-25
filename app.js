@@ -696,6 +696,56 @@ class ConvoyageApp {
 
     // 7. Vérifier et afficher les notifications pour les missions de moins de 24h
     this.checkUpcomingMissions();
+    
+    // 8. Update Cancellations History
+    this.renderCancellationsHistory();
+  }
+
+  renderCancellationsHistory() {
+    const grid = document.getElementById('cancellations_grid');
+    if (!grid) return;
+
+    const cancelledMissions = this.missions.filter(m => m.statut === 'Annulée');
+
+    if (cancelledMissions.length === 0) {
+      grid.innerHTML = `<div class="col-span-full py-8 text-center text-slate-400 text-sm font-medium">Aucune annulation récente.</div>`;
+      return;
+    }
+
+    grid.innerHTML = cancelledMissions.map(m => `
+      <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-sm flex flex-col">
+        <div class="p-3 border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 flex justify-between items-center">
+          <div class="flex items-center gap-2">
+            <span class="w-6 h-6 rounded bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 flex items-center justify-center font-bold text-xs"><i data-lucide="car" class="w-3.5 h-3.5"></i></span>
+            <div class="text-xs font-bold text-slate-800 dark:text-slate-200">${m.immatriculation || 'Inconnu'}</div>
+          </div>
+          <div class="text-[10px] font-bold text-slate-400 uppercase">
+            ${m.date ? new Date(m.date).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit' }) : 'N/A'}
+          </div>
+        </div>
+        <div class="p-3 flex-1 flex flex-col gap-3">
+          <div class="flex flex-col gap-1">
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Raison</span>
+            <span class="text-xs font-semibold text-slate-700 dark:text-slate-300">${m.cancelReason || 'Non spécifiée'}</span>
+          </div>
+          ${m.cancelComments ? `
+          <div class="flex flex-col gap-1">
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Commentaires</span>
+            <p class="text-xs text-slate-600 dark:text-slate-400 italic bg-slate-50 dark:bg-slate-950 p-2 rounded">${m.cancelComments}</p>
+          </div>
+          ` : ''}
+          ${m.cancelContractPhoto ? `
+          <div class="mt-auto pt-2">
+            <img src="${m.cancelContractPhoto}" class="w-full h-24 object-cover rounded-lg border border-slate-200 dark:border-slate-800 cursor-pointer hover:opacity-90 transition-opacity" onclick="window.open('${m.cancelContractPhoto}', '_blank')" alt="Photo contrat">
+          </div>
+          ` : ''}
+        </div>
+      </div>
+    `).join('');
+    
+    if (window.lucide) {
+      window.lucide.createIcons();
+    }
   }
 
   /**
@@ -3252,6 +3302,8 @@ class ConvoyageApp {
         actionTag = `<span class="px-2 py-0.5 text-[9px] font-extrabold bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-450 rounded border border-amber-155/30 uppercase font-sans tracking-wide block text-center max-w-[130px] truncate">MODIF PASS</span>`;
       } else if (act.includes('USER_DELETE')) {
         actionTag = `<span class="px-2 py-0.5 text-[9px] font-extrabold bg-rose-100 dark:bg-rose-950/50 text-rose-600 rounded border border-rose-200 uppercase font-sans tracking-wide block text-center max-w-[130px] truncate">SUPPR COMPTE</span>`;
+      } else if (act === 'MISSION_CANCEL') {
+        actionTag = `<span class="px-2 py-0.5 text-[9px] font-extrabold bg-orange-50 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400 rounded border border-orange-200/40 uppercase font-sans tracking-wide block text-center max-w-[130px] truncate">ANNUL MISSION</span>`;
       }
 
       tr.innerHTML = `
@@ -4072,35 +4124,37 @@ function initLogoResizer() {
   if (containers.length === 0) return;
 
   const resizeObserver = new ResizeObserver((entries) => {
-    for (const entry of entries) {
-      const container = entry.target;
-      const width = entry.contentRect.width || container.getBoundingClientRect().width;
-      const images = container.querySelectorAll('img, svg');
-      
-      images.forEach(img => {
-        if (container.classList.contains('logo-long-container')) {
-          const maxW = 400;
-          if (width < maxW && width > 0) {
-            img.style.width = '100%';
-            img.style.height = 'auto';
-            img.style.maxWidth = `${width}px`;
-          } else {
-            img.style.width = '400px';
-            img.style.maxWidth = '100%';
+    window.requestAnimationFrame(() => {
+      for (const entry of entries) {
+        const container = entry.target;
+        const width = entry.contentRect.width || container.getBoundingClientRect().width;
+        const images = container.querySelectorAll('img, svg');
+        
+        images.forEach(img => {
+          if (container.classList.contains('logo-long-container')) {
+            const maxW = 400;
+            if (width < maxW && width > 0) {
+              img.style.width = '100%';
+              img.style.height = 'auto';
+              img.style.maxWidth = `${width}px`;
+            } else {
+              img.style.width = '400px';
+              img.style.maxWidth = '100%';
+            }
+          } else if (container.classList.contains('logo-short-container')) {
+            const maxW = container.dataset.maxWidth ? parseInt(container.dataset.maxWidth, 10) : 150;
+            if (width < maxW && width > 0) {
+              img.style.width = '100%';
+              img.style.height = 'auto';
+              img.style.maxWidth = `${width}px`;
+            } else {
+              img.style.width = `${maxW}px`;
+              img.style.maxWidth = '100%';
+            }
           }
-        } else if (container.classList.contains('logo-short-container')) {
-          const maxW = container.dataset.maxWidth ? parseInt(container.dataset.maxWidth, 10) : 150;
-          if (width < maxW && width > 0) {
-            img.style.width = '100%';
-            img.style.height = 'auto';
-            img.style.maxWidth = `${width}px`;
-          } else {
-            img.style.width = `${maxW}px`;
-            img.style.maxWidth = '100%';
-          }
-        }
-      });
-    }
+        });
+      }
+    });
   });
 
   containers.forEach(container => {

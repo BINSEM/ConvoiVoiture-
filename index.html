@@ -2910,6 +2910,22 @@
                 </div>
               </div>
             </div>
+
+            <!-- Historique des Annulations -->
+            <div class="mt-8 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden">
+              <div class="px-5 py-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-900/50 cursor-pointer" onclick="document.getElementById('cancellations_history_content').classList.toggle('hidden')">
+                <h3 class="text-base font-extrabold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                  <i data-lucide="history" class="w-5 h-5 text-rose-500"></i> Historique des annulations
+                </h3>
+                <i data-lucide="chevron-down" class="w-5 h-5 text-slate-400"></i>
+              </div>
+              <div id="cancellations_history_content" class="hidden p-5 bg-slate-50/30 dark:bg-slate-950/20">
+                <div id="cancellations_grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <!-- JS will populate this -->
+                  <div class="col-span-full py-8 text-center text-slate-400 text-sm font-medium">Chargement de l'historique...</div>
+                </div>
+              </div>
+            </div>
           </section>
 
           <!-- 4. VUE : PARAMÈTRES & CONFIGURATION COMPTABLE -->
@@ -4414,15 +4430,60 @@
                   </div>
 
                   <div
-                    class="pt-4 border-t border-slate-150 dark:border-slate-800/80 flex justify-between items-center"
+                    class="pt-4 border-t border-slate-150 dark:border-slate-800/80 flex flex-col gap-2"
                   >
                     <button
                       onclick="InspectionService.cancelSelection()"
-                      class="text-xs font-bold text-rose-500 hover:text-rose-600 dark:hover:text-rose-400 flex items-center gap-1 cursor-pointer"
+                      class="text-xs font-bold text-slate-500 hover:text-slate-600 dark:hover:text-slate-400 flex items-center gap-1 cursor-pointer w-full py-1"
                     >
                       <i data-lucide="arrow-left" class="w-4 h-4"></i> Changer
                       de véhicule
                     </button>
+                    <div class="flex flex-col gap-2">
+                      <button
+                        onclick="InspectionService.toggleCancelDropdown()"
+                        class="text-xs font-bold text-rose-500 hover:text-rose-600 flex items-center gap-1 cursor-pointer w-full py-1"
+                      >
+                        <i data-lucide="x-circle" class="w-4 h-4"></i> Annuler la mission
+                      </button>
+                      <div id="ins_cancel_inline_dropdown" class="hidden flex-col gap-2 mt-1 p-3 bg-rose-50/50 dark:bg-rose-950/20 border border-rose-100 dark:border-rose-900/50 rounded-xl">
+                        <label class="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Raison de l'annulation *</label>
+                        <select id="ins_cancel_reason_select_inline" class="w-full text-xs px-2 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded outline-none font-bold text-slate-700 dark:text-slate-300" onchange="InspectionService.onCancelReasonChangeInline()">
+                          <option value="">Sélectionner...</option>
+                          <option value="Par propriétaire">Par propriétaire</option>
+                          <option value="Par Driiveme">Par Driiveme</option>
+                          <option value="Par conducteur">Par conducteur</option>
+                          <option value="Autre">Autre</option>
+                        </select>
+                        <input type="text" id="ins_cancel_reason_other_inline" class="hidden w-full text-xs px-2 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded outline-none font-bold text-slate-700 dark:text-slate-300" placeholder="Précisez le motif..." oninput="InspectionService.validateCancelMissionInline()" />
+                        
+                        <label class="text-[9px] font-bold text-slate-400 uppercase tracking-wider block mt-1">Commentaires</label>
+                        <textarea id="ins_cancel_comments_inline" class="w-full text-xs px-2 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded outline-none font-medium text-slate-700 dark:text-slate-300 resize-none h-16" placeholder="Ajouter un commentaire..."></textarea>
+                        
+                        <label class="text-[9px] font-bold text-slate-400 uppercase tracking-wider block mt-1">Photo justificative *</label>
+                        <div
+                          class="relative h-20 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded flex flex-col items-center justify-center cursor-pointer overflow-hidden group hover:border-indigo-500 transition-all border-dashed"
+                          onclick="InspectionService.viewCancelContractPhoto()"
+                        >
+                          <img
+                            id="ins_cancel_contract_preview"
+                            class="absolute inset-0 w-full h-full object-cover hidden"
+                            alt="Aperçu Photo"
+                          />
+                          <div
+                            id="ins_cancel_contract_placeholder"
+                            class="flex flex-col items-center justify-center p-2 text-slate-400 dark:text-slate-500 group-hover:text-indigo-500 transition-colors text-center font-sans"
+                          >
+                            <i data-lucide="camera" class="w-5 h-5 mb-1 group-hover:scale-110 transition-transform"></i>
+                            <span class="text-[8px] font-bold uppercase tracking-wider block">Prendre / Joindre photo</span>
+                          </div>
+                        </div>
+
+                        <button id="ins_btn_confirm_cancel" onclick="InspectionService.confirmCancelMissionInline()" class="mt-2 w-full bg-rose-500 hover:bg-rose-600 disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-rose-400 text-white text-[10px] font-bold py-1.5 rounded-lg transition-colors" disabled>
+                          Confirmer l'annulation
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -5559,16 +5620,19 @@
                 </div>
                 <div
                   class="flex items-center gap-2.5 text-emerald-600 dark:text-emerald-400 font-extrabold text-base uppercase border-b border-emerald-100 dark:border-emerald-900/30 pb-2"
+                  id="ins_success_title_container"
                 >
                   <i
                     data-lucide="check-circle"
                     class="w-6 h-6 text-emerald-500 animate-bounce"
+                    id="ins_success_icon"
                   ></i>
-                  <span>Convoyage Mandat Clôturé !</span>
+                  <span id="ins_success_title">Convoyage Mandat Clôturé !</span>
                 </div>
                 <div class="text-xs space-y-2.5">
                   <p
                     class="leading-relaxed font-semibold text-slate-700 dark:text-slate-300"
+                    id="ins_success_description_text"
                   >
                     Le rapport final de mission a été généré. Les informations
                     clés sont archivées localement :
@@ -7125,6 +7189,8 @@
         />
       </div>
     </div>
+
+
 
     <!-- ==========================================================================
          AFFICHER L'OVERLAY DE CONNEXION SÉCURISÉE (RBAC)
