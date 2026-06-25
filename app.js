@@ -1492,7 +1492,23 @@ class ConvoyageApp {
    */
   async uploadMissionToDrive(mission, token) {
     try {
-      const missionBlob = new Blob([JSON.stringify(mission, null, 2)], { type: 'application/json' });
+      // Strip heavy base64 images from mission JSON
+      const stripped = JSON.parse(JSON.stringify(mission));
+      if (stripped.inspection) {
+         delete stripped.inspection.dashboardDepartPhoto;
+         delete stripped.inspection.dashboardArriveePhoto;
+         delete stripped.inspection.depositReceiptPhoto;
+         delete stripped.inspection.contractPhoto;
+         delete stripped.inspection.signature;
+         if (stripped.inspection.damages) {
+            stripped.inspection.damages.forEach((d) => {
+               delete d.photoUrls;
+            });
+         }
+      }
+      delete stripped.cancelContractPhoto;
+
+      const missionBlob = new Blob([JSON.stringify(stripped, null, 2)], { type: 'application/json' });
       const filename = `Mission_${mission.immatriculation}_${mission.id}.json`;
       const file = new File([missionBlob], filename, { type: 'application/json' });
       
@@ -1569,6 +1585,28 @@ class ConvoyageApp {
       const localMissions = await StorageService.loadMissions();
       const localSettings = StorageService.loadSettings();
 
+      // Strip heavy base64 images from completed missions
+      const optimizedMissions = localMissions.map(m => {
+        if (m.statut === 'Terminée' || m.statut === 'Annulée') {
+          const stripped = JSON.parse(JSON.stringify(m));
+          if (stripped.inspection) {
+             delete stripped.inspection.dashboardDepartPhoto;
+             delete stripped.inspection.dashboardArriveePhoto;
+             delete stripped.inspection.depositReceiptPhoto;
+             delete stripped.inspection.contractPhoto;
+             delete stripped.inspection.signature;
+             if (stripped.inspection.damages) {
+                stripped.inspection.damages.forEach((d) => {
+                   delete d.photoUrls;
+                });
+             }
+          }
+          delete stripped.cancelContractPhoto;
+          return stripped;
+        }
+        return m;
+      });
+
       const res = await fetch('/api/drive/save-app-data', {
         method: 'POST',
         headers: {
@@ -1576,7 +1614,7 @@ class ConvoyageApp {
           'Authorization': `Bearer ${this.googleDriveToken}`
         },
         body: JSON.stringify({
-          missions: localMissions,
+          missions: optimizedMissions,
           settings: localSettings
         })
       });
@@ -1602,6 +1640,28 @@ class ConvoyageApp {
       const localMissions = await StorageService.loadMissions();
       const localSettings = StorageService.loadSettings();
 
+      // Strip heavy base64 images from completed missions to prevent PayloadTooLargeError
+      const optimizedMissions = localMissions.map(m => {
+        if (m.statut === 'Terminée' || m.statut === 'Annulée') {
+          const stripped = JSON.parse(JSON.stringify(m));
+          if (stripped.inspection) {
+             delete stripped.inspection.dashboardDepartPhoto;
+             delete stripped.inspection.dashboardArriveePhoto;
+             delete stripped.inspection.depositReceiptPhoto;
+             delete stripped.inspection.contractPhoto;
+             delete stripped.inspection.signature;
+             if (stripped.inspection.damages) {
+                stripped.inspection.damages.forEach((d) => {
+                   delete d.photoUrls;
+                });
+             }
+          }
+          delete stripped.cancelContractPhoto;
+          return stripped;
+        }
+        return m;
+      });
+
       const res = await fetch('/api/drive/save-app-data', {
         method: 'POST',
         headers: {
@@ -1609,7 +1669,7 @@ class ConvoyageApp {
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          missions: localMissions,
+          missions: optimizedMissions,
           settings: localSettings
         })
       });

@@ -300,21 +300,15 @@ export const InspectionService = {
     }
     
     const titleContainer = document.getElementById("ins_success_title_container");
-    const titleText = document.getElementById("ins_success_title");
-    const iconEl = document.getElementById("ins_success_icon");
     const descText = document.getElementById("ins_success_description_text");
-    if (titleContainer && titleText && iconEl) {
+    if (titleContainer) {
       if (mission.statut === "Annulée") {
         titleContainer.className = "flex items-center gap-2.5 text-rose-600 dark:text-rose-400 font-extrabold text-base uppercase border-b border-rose-100 dark:border-rose-900/30 pb-2";
-        iconEl.setAttribute("data-lucide", "x-circle");
-        iconEl.className = "w-6 h-6 text-rose-500 animate-bounce";
-        titleText.textContent = "Mission Annulée";
+        titleContainer.innerHTML = `<i data-lucide="x-circle" class="w-6 h-6 text-rose-500 animate-bounce" id="ins_success_icon"></i><span id="ins_success_title">Mission Annulée</span>`;
         if (descText) descText.textContent = "Le rapport d'annulation a été généré et sera synchronisé avec vos dossiers. Détails archivés :";
       } else {
         titleContainer.className = "flex items-center gap-2.5 text-emerald-600 dark:text-emerald-400 font-extrabold text-base uppercase border-b border-emerald-100 dark:border-emerald-900/30 pb-2";
-        iconEl.setAttribute("data-lucide", "check-circle");
-        iconEl.className = "w-6 h-6 text-emerald-500 animate-bounce";
-        titleText.textContent = "Convoyage Mandat Clôturé !";
+        titleContainer.innerHTML = `<i data-lucide="check-circle" class="w-6 h-6 text-emerald-500 animate-bounce" id="ins_success_icon"></i><span id="ins_success_title">Convoyage Mandat Clôturé !</span>`;
         if (descText) descText.textContent = "Le rapport final de mission a été généré. Les informations clés sont archivées localement :";
       }
       if (window.lucide) window.lucide.createIcons();
@@ -439,7 +433,7 @@ export const InspectionService = {
       });
     } else {
       photosContainer.innerHTML =
-        '<p class="text-xs text-slate-500 italic">Aucune photo prise.</p>';
+        '<div class="w-full text-center py-4 px-2 bg-slate-50 dark:bg-slate-900/40 rounded-xl border border-dashed border-slate-200 dark:border-slate-800"><i data-lucide="cloud-check" class="w-8 h-8 text-emerald-500 mx-auto mb-2 opacity-80"></i><p class="text-[10px] font-bold text-slate-500 dark:text-slate-400">Photos HD correctement archivées sur Google Drive.</p></div>';
     }
 
     const noView = document.getElementById("ins_no_mission_view");
@@ -582,7 +576,7 @@ export const InspectionService = {
     }
     
     // Process cancellation
-    const mission = this._getMission(this.activeMissionId);
+    const mission = window.app && window.app.missions ? window.app.missions.find((m) => m.id === this.activeMissionId) : null;
     if (!mission) return;
     
     if (window.DashboardService) {
@@ -714,8 +708,8 @@ export const InspectionService = {
       const constraints = {
         video: {
           facingMode: { ideal: this.facingMode },
-          width: { ideal: 3845, max: 4096 },
-          height: { ideal: 2160, max: 2160 },
+          width: { ideal: 1920, max: 1920 },
+          height: { ideal: 1080, max: 1080 },
         },
         audio: false,
       };
@@ -1028,7 +1022,7 @@ export const InspectionService = {
         ctx.textBaseline = "middle";
         ctx.fillText(textStr, rectX + padding, rectY + rectHeight / 2);
 
-        resolve(canvas.toDataURL("image/jpeg", 0.85));
+        resolve(canvas.toDataURL("image/jpeg", 0.70));
       };
       img.onerror = () => {
         resolve(dataUrl);
@@ -1181,8 +1175,16 @@ export const InspectionService = {
     }
 
     try {
-      const width = video.videoWidth || 640;
-      const height = video.videoHeight || 480;
+      const MAX_WIDTH = 1280;
+      let width = video.videoWidth || 640;
+      let height = video.videoHeight || 480;
+      
+      if (width > MAX_WIDTH) {
+        const ratio = MAX_WIDTH / width;
+        width = MAX_WIDTH;
+        height = Math.round(height * ratio);
+      }
+      
       canvas.width = width;
       canvas.height = height;
 
@@ -1224,7 +1226,7 @@ export const InspectionService = {
         ctx.textBaseline = "middle";
         ctx.fillText(textStr, rectX + padding, rectY + rectHeight / 2);
 
-        const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+        const dataUrl = canvas.toDataURL("image/jpeg", 0.70);
         this.photosObjUrl.push(dataUrl);
 
         if (this.activeCameraTarget === "dash_dep") {

@@ -79,10 +79,14 @@ async function startServer() {
   });
 
   app.use(cors());
-  app.use(express.json());
+  app.use(express.json({ limit: '50mb' }));
+  app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
   const storage = multer.memoryStorage();
-  const upload = multer({ storage: storage });
+  const upload = multer({ 
+    storage: storage,
+    limits: { fileSize: 50 * 1024 * 1024 } 
+  });
 
   // -------------------------------------------------------------
   // RBAC AUTHENTICATION MIDDLEWARES & ENDPOINTS
@@ -1063,6 +1067,15 @@ async function startServer() {
       res.sendFile(path.join(distPath, "index.html"));
     });
   }
+
+  // Global error handler to prevent HTML stack traces
+  app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+    console.error("Express global error:", err);
+    res.status(err.status || 500).json({
+      success: false,
+      error: err.message || "Internal server error"
+    });
+  });
 
   app.listen(PORT, "0.0.0.0", () => {
     console.log(`Server running on http://localhost:${PORT}`);
