@@ -135,7 +135,7 @@ export const DriveSyncService = {
   /**
    * Run background non-blocking upload for changed monthly JSON files
    */
-  async runBackgroundSync(accessToken: string, missions: any[], actingUser: string) {
+  async runBackgroundSync(accessToken: string, missions: any[], actingUser: string, deletedMissionIds: string[] = []) {
     // Start background sync
     Promise.resolve().then(async () => {
       try {
@@ -192,9 +192,13 @@ export const DriveSyncService = {
             }
           }
 
+          // Filter out deleted missions
+          const filteredLocal = mList.filter(m => m && m.id && !deletedMissionIds.includes(m.id));
+          const filteredRemote = previousDriveData.filter(m => m && m.id && !deletedMissionIds.includes(m.id));
+
           // Compare stringified versions of relevant data to verify if it is dirty
-          const simplifiedL = mList.map(m => ({ id: m.id, statut: m.statut, date: m.date, info: m.vehicle || m.immatriculation }));
-          const simplifiedR = previousDriveData.map(m => ({ id: m.id, statut: m.statut, date: m.date, info: m.vehicle || m.immatriculation }));
+          const simplifiedL = filteredLocal.map(m => ({ id: m.id, statut: m.statut, date: m.date, info: m.vehicle || m.immatriculation }));
+          const simplifiedR = filteredRemote.map(m => ({ id: m.id, statut: m.statut, date: m.date, info: m.vehicle || m.immatriculation }));
 
           if (JSON.stringify(simplifiedL) === JSON.stringify(simplifiedR) && fileId) {
             console.log(`[Background Sync] Monthly file ${fileName} is clean. Skipping update.`);
@@ -202,7 +206,7 @@ export const DriveSyncService = {
           }
 
           // Generate merged state
-          const mergedList = mergeMissionLists(mList, previousDriveData);
+          const mergedList = mergeMissionLists(filteredLocal, filteredRemote);
 
           const fileMetadata = {
             name: fileName,
@@ -254,7 +258,7 @@ export const DriveSyncService = {
   /**
    * Run full bidirectional synchronization for all monthly files present on Drive
    */
-  async syncAllMonthsBidirectional(accessToken: string, localMissions: any[], actingUser: string): Promise<any[]> {
+  async syncAllMonthsBidirectional(accessToken: string, localMissions: any[], actingUser: string, deletedMissionIds: string[] = []): Promise<any[]> {
     console.log(`[Bidirectional Sync] Initializing full monthly database sync for user: ${actingUser}`);
     const oauth2Client = new google.auth.OAuth2();
     oauth2Client.setCredentials({ access_token: accessToken });
@@ -279,7 +283,7 @@ export const DriveSyncService = {
     }));
 
     const yearFolders = listYearsObj.data.files || [];
-    let cumulativeMissions: any[] = [...localMissions];
+    let cumulativeMissions: any[] = localMissions.filter(m => m && m.id && !deletedMissionIds.includes(m.id));
     const processedKeys = new Set<string>();
 
     for (const yearFolder of yearFolders) {
@@ -342,11 +346,14 @@ export const DriveSyncService = {
           const mParts = dateStr.split("-");
           const mY = mParts[0] || "2026";
           const mM = mParts[1] || "06";
-          return `${mY}-${mM}` === key;
+          return `${mY}-${mM}` === key && m && m.id && !deletedMissionIds.includes(m.id);
         });
 
+        // Filter out any deleted remote missions
+        const filteredRemote = remoteMissions.filter(m => m && m.id && !deletedMissionIds.includes(m.id));
+
         // Merge local and remote
-        const mergedMonthly = mergeMissionLists(localMonthly, remoteMissions);
+        const mergedMonthly = mergeMissionLists(localMonthly, filteredRemote);
 
         // Remove previous ones belonging to this month from cumulative, and add the updated merged index
         cumulativeMissions = cumulativeMissions.filter(m => {
@@ -390,6 +397,9 @@ export const DriveSyncService = {
       const [year, month] = key.split("-");
       const frenchMonth = FRENCH_MONTH_NAMES[month] || "Juin";
 
+      const filteredMList = mList.filter(m => m && m.id && !deletedMissionIds.includes(m.id));
+      if (filteredMList.length === 0) continue;
+
       console.log(`[Bidirectional Sync] Creating new folder layout for month: ${year}/${frenchMonth}/Data`);
       const yearFolderId = await findOrCreateFolder(drive, year, convoyagesId);
       const monthFolderId = await findOrCreateFolder(drive, frenchMonth, yearFolderId);
@@ -401,7 +411,7 @@ export const DriveSyncService = {
       };
       const media = {
         mimeType: "application/json",
-        body: Readable.from(JSON.stringify(mList, null, 2))
+        body: Readable.from(JSON.stringify(filteredMList, null, 2))
       };
 
       await fetchWithRetry(() => drive.files.create({
@@ -416,7 +426,7 @@ export const DriveSyncService = {
         const mM = mParts[1] || "06";
         return `${mY}-${mM}` !== key;
       });
-      cumulativeMissions.push(...mList);
+      cumulativeMissions.push(...filteredMList);
     }
 
     DbService.addLog(

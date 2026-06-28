@@ -98,7 +98,14 @@ async function startServer() {
     if (rc) {
       rc.split(';').forEach(function(cookie: string) {
         const parts = cookie.split('=');
-        list[parts.shift()!.trim()] = decodeURI(parts.join('='));
+        const key = parts.shift()!.trim();
+        let value = parts.join('=');
+        try {
+          value = decodeURIComponent(value);
+        } catch (e) {
+          // Keep raw value if decoding fails
+        }
+        list[key] = value;
       });
     }
     return list[val];
@@ -437,19 +444,44 @@ async function startServer() {
   // Save missions locally to fallback sample-data.json
   app.post("/api/missions/save-local", authenticate, requireRole(["ADMIN"]), (req: any, res) => {
     try {
-      const { missions } = req.body;
+      const { missions, deletedMissionIds } = req.body;
       if (!Array.isArray(missions)) {
         return res.status(400).json({ success: false, error: "Invalid missions array" });
       }
+
+      // Strip heavy base64 images from missions saved in sample-data.json
+      const strippedMissions = missions.map((m: any) => {
+        if (!m) return m;
+        const copy = { ...m };
+        if (copy.inspection) {
+          copy.inspection = { ...copy.inspection };
+          delete copy.inspection.dashboardDepartPhoto;
+          delete copy.inspection.dashboardArriveePhoto;
+          delete copy.inspection.depositReceiptPhoto;
+          delete copy.inspection.contractPhoto;
+          delete copy.inspection.signature;
+          if (Array.isArray(copy.inspection.damages)) {
+            copy.inspection.damages = copy.inspection.damages.map((d: any) => {
+              if (!d) return d;
+              const dCopy = { ...d };
+              delete dCopy.photoUrls;
+              return dCopy;
+            });
+          }
+        }
+        delete copy.cancelContractPhoto;
+        return copy;
+      });
+
       const dataPath = path.join(process.cwd(), "data", "sample-data.json");
-      fs.writeFileSync(dataPath, JSON.stringify(missions, null, 2), "utf-8");
+      fs.writeFileSync(dataPath, JSON.stringify(strippedMissions, null, 2), "utf-8");
 
       // Background non-blocking sync if Google Drive access token is attached
       const authHeader = req.headers.authorization;
       if (authHeader && authHeader.startsWith("Bearer ")) {
         const token = authHeader.split(" ")[1];
         const actingUser = req.user?.username || "SYSTEM";
-        DriveSyncService.runBackgroundSync(token, missions, actingUser);
+        DriveSyncService.runBackgroundSync(token, strippedMissions, actingUser, deletedMissionIds || []);
       }
 
       return res.json({ success: true });
@@ -634,6 +666,8 @@ async function startServer() {
       }
       const token = authHeader.split(" ")[1];
 
+      const { deletedMissionIds } = req.body || {};
+
       const dataPath = path.join(process.cwd(), "data", "sample-data.json");
       let localMissions: any[] = [];
       if (fs.existsSync(dataPath)) {
@@ -643,7 +677,7 @@ async function startServer() {
       }
 
       const actingUser = req.user?.username || "SYSTEM";
-      const syncedMissions = await DriveSyncService.syncAllMonthsBidirectional(token, localMissions, actingUser);
+      const syncedMissions = await DriveSyncService.syncAllMonthsBidirectional(token, localMissions, actingUser, deletedMissionIds || []);
 
       fs.writeFileSync(dataPath, JSON.stringify(syncedMissions, null, 2), "utf-8");
 
@@ -871,17 +905,13 @@ async function startServer() {
       // 4. [Month Name in French] inside [Year]
       const monthId = await getOrCreateFolder(drive, frenchMonth, yearId);
 
-      // 5. [Voiture Immatriculation] inside [Month Name]
+      // 5. [Voiture Immatriculation] inside [Month Name] (The Car Folder)
       const registrationId = await getOrCreateFolder(drive, immatriculation, monthId);
 
-      // 6. "Etat-des-lieux-YYYY-MM-DD" inside [Voiture Immatriculation]
-      const folderName = `Etat-des-lieux-${dateStr}`;
-      const etatDesLieuxId = await getOrCreateFolder(drive, folderName, registrationId);
-
-      // 7. Upload file inside corresponding folder
+      // 6. Upload file directly inside the corresponding Car Folder
       const fileMetadata = {
         name: filename,
-        parents: [etatDesLieuxId]
+        parents: [registrationId]
       };
 
       const media = {
@@ -894,7 +924,7 @@ async function startServer() {
       const fileSize = req.file.size || req.file.buffer.length;
 
       // Check if file already exists in this exact folder
-      const q = `name = '${filename.replace(/'/g, "\\'")}' and '${etatDesLieuxId}' in parents and trashed = false`;
+      const q = `name = '${filename.replace(/'/g, "\\'")}' and '${registrationId}' in parents and trashed = false`;
       const duplicateList = await drive.files.list({
         q: q,
         spaces: "drive",
@@ -921,7 +951,7 @@ async function startServer() {
           fileId: match.id,
           duplicated: true,
           message: "File already exists on Google Drive (skipped upload)",
-          path: `Convoyeur Professionnel/Convoyages/${year}/${frenchMonth}/${immatriculation}/${folderName}/${filename}`
+          path: `Convoyeur Professionnel/Convoyages/${year}/${frenchMonth}/${immatriculation}/${filename}`
         });
       }
 
@@ -995,7 +1025,7 @@ async function startServer() {
       return res.json({
         success: true,
         fileId: driveFile.data.id,
-        path: `Convoyeur Professionnel/Convoyages/${year}/${frenchMonth}/${immatriculation}/${folderName}/${filename}`
+        path: `Convoyeur Professionnel/Convoyages/${year}/${frenchMonth}/${immatriculation}/${filename}`
       });
 
     } catch (err: any) {

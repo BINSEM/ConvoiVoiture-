@@ -81,6 +81,18 @@ export const TableService = {
       return `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-800 dark:bg-indigo-950/40 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800/60">
         <span class="w-1.5 h-1.5 mr-1.5 rounded-full bg-indigo-500"></span>Validée
       </span>`;
+    } else if (s === 'état des lieux' || s === 'etat des lieux') {
+      return `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-violet-100 text-violet-800 dark:bg-violet-950/40 dark:text-violet-300 border border-violet-200 dark:border-violet-800/60">
+        <span class="w-1.5 h-1.5 mr-1.5 rounded-full bg-violet-500"></span>État des lieux
+      </span>`;
+    } else if (s === 'état des lieux - non fait' || s === 'etat des lieux - non fait' || s.includes('not done')) {
+      return `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60">
+        <span class="w-1.5 h-1.5 mr-1.5 rounded-full bg-amber-500"></span>"État des Lieux" Not Done
+      </span>`;
+    } else if (s === 'état des lieux - fait' || s === 'etat des lieux - fait' || s.includes('done')) {
+      return `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-violet-100 text-violet-800 dark:bg-violet-950/40 dark:text-violet-300 border border-violet-200 dark:border-violet-800/60">
+        <span class="w-1.5 h-1.5 mr-1.5 rounded-full bg-violet-500"></span>"État des Lieux" Done
+      </span>`;
     } else if (s === 'en attente') {
       return `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60">
         <span class="w-1.5 h-1.5 mr-1.5 rounded-full bg-amber-500"></span>En attente
@@ -252,7 +264,7 @@ export const TableService = {
                   </svg>
                 </button>
 
-                ${!isReadOnly && (m.statut.toLowerCase() !== 'payée' && m.statut.toLowerCase() !== 'terminée' && m.statut.toLowerCase() !== 'terminee') ? `
+                ${!isReadOnly && (m.statut.toLowerCase() !== 'payée' && m.statut.toLowerCase() !== 'terminée' && m.statut.toLowerCase() !== 'terminee' && !m.statut.toLowerCase().includes('état des lieux') && !m.statut.toLowerCase().includes('etat des lieux')) ? `
                   <button data-action="validate" data-id="${m.id}" title="Marquer comme Validée/Payée" class="p-1 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 rounded transition-colors cursor-pointer">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
                   </button>

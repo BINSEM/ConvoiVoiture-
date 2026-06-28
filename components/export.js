@@ -359,7 +359,7 @@ export const ExportService = {
           case 'date': content = new Date(m.date).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' }); break;
           case 'vehicle': content = `<strong>${m.vehicle}</strong> <br><span class="text-xs text-gray-500">${m.immatriculation}</span>`; break;
           case 'itinéraire': content = `${m.depart} ➔ ${m.destination}`; break;
-          case 'statut': content = `<span class="badge ${m.statut.toLowerCase() === 'payée' ? 'badge-success' : m.statut.toLowerCase() === 'validée' ? 'badge-info' : 'badge-warn'}">${m.statut}</span>`; break;
+          case 'statut': content = `<span class="badge ${(m.statut || '').toLowerCase() === 'payée' ? 'badge-success' : ((m.statut || '').toLowerCase() === 'validée' || (m.statut || '').toLowerCase().includes('état des lieux') || (m.statut || '').toLowerCase().includes('etat des lieux') ? 'badge-info' : 'badge-warn')}">${m.statut}</span>`; break;
           case 'gain': content = `<span class="text-right">${Number(m.gain).toFixed(2)} €</span>`; break;
           case 'dépenses': content = `<span class="text-right text-red">${depenses.toFixed(2)} €</span>`; break;
           case 'bénéfice': content = `<span class="text-right text-green"><strong>${benef.toFixed(2)} €</strong></span>`; break;
@@ -654,7 +654,7 @@ export const ExportService = {
       <body>
         <div class="header">
           <div style="display: flex; align-items: center; gap: 15px;">
-            <img src="/SE LogoLargeHEXT02.png" alt="SE Logistique" style="height: 50px; width: auto; object-fit: contain;" referrerPolicy="no-referrer" />
+            <img src="/logo-dark.png" alt="SE Logistique" style="height: 50px; width: auto; object-fit: contain;" referrerPolicy="no-referrer" />
             <div class="company-info">
               <h1>${settings.nom}</h1>
               <p>${settings.statutEntreprise}</p>

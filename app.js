@@ -30,6 +30,33 @@ function escapeHtml(str) {
 }
 window.escapeHtml = escapeHtml;
 
+function stripImagesFromMissions(missions) {
+  if (!Array.isArray(missions)) return missions;
+  return missions.map(m => {
+    try {
+      const copy = JSON.parse(JSON.stringify(m));
+      if (copy.inspection) {
+        delete copy.inspection.dashboardDepartPhoto;
+        delete copy.inspection.dashboardArriveePhoto;
+        delete copy.inspection.depositReceiptPhoto;
+        delete copy.inspection.contractPhoto;
+        delete copy.inspection.signature;
+        if (Array.isArray(copy.inspection.damages)) {
+          copy.inspection.damages.forEach(d => {
+            delete d.photoUrls;
+          });
+        }
+      }
+      delete copy.cancelContractPhoto;
+      return copy;
+    } catch (e) {
+      console.warn("Error stripping images from mission:", e);
+      return m;
+    }
+  });
+}
+window.stripImagesFromMissions = stripImagesFromMissions;
+
 // Intercepteur global Fetch pour injecter l'ID de session RBAC (X-Session-Token) dans toutes les requêtes
 const originalFetch = window.fetch;
 const customFetch = async function(url, options = {}) {
@@ -44,17 +71,35 @@ const customFetch = async function(url, options = {}) {
     }
   }
   const response = await originalFetch(url, options);
-  if (response.status === 401 && !url.includes('/api/auth/login')) {
-    // Session invalide, déconnexion forcée
-    localStorage.removeItem('rbac_session_token');
-    document.cookie = "session_token=; Path=/; Max-Age=0; SameSite=Lax";
-    if (window.DashboardService && window.DashboardService.showNotification) {
-      window.DashboardService.showNotification("Session expirée. Veuillez vous reconnecter.", "error");
+  
+  // Extraire de manière sécurisée la chaîne d'URL pour des vérifications de sécurité robustes (gère les objets Request/URL)
+  let urlString = '';
+  if (typeof url === 'string') {
+    urlString = url;
+  } else if (url && typeof url === 'object' && 'url' in url) {
+    urlString = url.url;
+  } else if (url && typeof url.toString === 'function') {
+    urlString = url.toString();
+  }
+
+  if (response.status === 401 && token) {
+    const isInternalApi = urlString.includes('/api/');
+    const isLoginRoute = urlString.includes('/api/auth/login');
+    const isDriveRoute = urlString.includes('/api/drive/');
+    const isExternalAuth = urlString.includes('identitytoolkit') || urlString.includes('securetoken') || urlString.includes('googleapis.com');
+
+    if (isInternalApi && !isLoginRoute && !isDriveRoute && !isExternalAuth) {
+      // Session invalide, déconnexion forcée de l'application principale
+      localStorage.removeItem('rbac_session_token');
+      document.cookie = "session_token=; Path=/; Max-Age=0; SameSite=Lax";
+      if (window.DashboardService && window.DashboardService.showNotification) {
+        window.DashboardService.showNotification("Session expirée. Veuillez vous reconnecter.", "error");
+      }
+      // Délai court avant rechargement
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
     }
-    // Délai court avant rechargement
-    setTimeout(() => {
-      window.location.reload();
-    }, 1500);
   }
   return response;
 };
@@ -947,7 +992,10 @@ class ConvoyageApp {
     fetch('/api/missions/save-local', {
       method: 'POST',
       headers: pushHeaders,
-      body: JSON.stringify({ missions: this.missions })
+      body: JSON.stringify({ 
+        missions: stripImagesFromMissions(this.missions),
+        deletedMissionIds: (this.settings && this.settings.deletedMissionIds) || []
+      })
     }).then(res => {
       if (!res.ok) throw new Error("Server error");
     }).catch(err => {
@@ -1372,6 +1420,19 @@ class ConvoyageApp {
       // Supprimer
       ModalService.confirmDelete(m.vehicle, () => {
         this.missions = this.missions.filter(item => item.id !== id);
+        
+        // Track deletion to sync with Google Drive
+        if (!this.settings) {
+          this.settings = {};
+        }
+        if (!this.settings.deletedMissionIds) {
+          this.settings.deletedMissionIds = [];
+        }
+        if (!this.settings.deletedMissionIds.includes(id)) {
+          this.settings.deletedMissionIds.push(id);
+          StorageService.saveSettings(this.settings);
+        }
+
         this.saveMissions();
         this.populateClientFilters();
         this.refreshUI();
@@ -1432,8 +1493,15 @@ class ConvoyageApp {
         // Sync settings
         if (data.settings) {
           const currentSettings = StorageService.loadSettings();
-          if (JSON.stringify(currentSettings) !== JSON.stringify(data.settings)) {
-            this.settings = { ...this.settings, ...data.settings };
+          
+          // Bidirectional merge of deleted mission IDs
+          const localDeleted = currentSettings.deletedMissionIds || [];
+          const remoteDeleted = data.settings.deletedMissionIds || [];
+          const combinedDeleted = Array.from(new Set([...localDeleted, ...remoteDeleted]));
+          
+          const mergedSettings = { ...this.settings, ...data.settings, deletedMissionIds: combinedDeleted };
+          if (JSON.stringify(currentSettings) !== JSON.stringify(mergedSettings)) {
+            this.settings = mergedSettings;
             StorageService.saveSettings(this.settings);
             updated = true;
           }
@@ -1442,19 +1510,24 @@ class ConvoyageApp {
         // Sync missions
         if (data.missions) {
           const localMissions = await StorageService.loadMissions();
+          const deletedIds = this.settings.deletedMissionIds || [];
           
           const isSampleData = localMissions.length > 0 && localMissions.some(m => m.id && m.id.includes('sample'));
           
           let finalMissions;
           if (isSampleData) {
-            finalMissions = data.missions;
+            finalMissions = data.missions.filter(m => m && m.id && !deletedIds.includes(m.id));
             updated = true;
           } else {
-            // Smart Bidirectional Merge by ID
-            const merged = [...localMissions];
+            // Filter local missions to remove any that are marked as deleted
+            let merged = localMissions.filter(m => m && m.id && !deletedIds.includes(m.id));
+            if (merged.length !== localMissions.length) {
+              updated = true;
+            }
+
             let addedCount = 0;
             data.missions.forEach(cm => {
-              if (cm && cm.id && !merged.some(lm => lm.id === cm.id)) {
+              if (cm && cm.id && !deletedIds.includes(cm.id) && !merged.some(lm => lm.id === cm.id)) {
                 merged.push(cm);
                 addedCount++;
               }
@@ -1526,7 +1599,15 @@ class ConvoyageApp {
         body: formData
       });
 
-      const data = await res.json();
+      const responseText = await res.text();
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (parseErr) {
+        console.error("Server response was not JSON. Raw response:", responseText);
+        throw new Error("Le serveur a renvoyé une réponse HTML au lieu de JSON.");
+      }
+      
       if (res.ok && data.success) {
         console.log(`Mission ${mission.id} sauvegardée automatiquement sur Google Drive dans ${data.path}`);
         return true;
@@ -1534,7 +1615,13 @@ class ConvoyageApp {
         throw new Error(data.error || "Échecs de l'upload");
       }
     } catch (err) {
-      console.error("Erreur de sauvegarde automatique sur Google Drive:", err);
+      const isNetworkError = !navigator.onLine || (err.message && (err.message.includes("Failed to fetch") || err.message.includes("NetworkError")));
+      if (isNetworkError) {
+        console.warn("Erreur de sauvegarde automatique sur Google Drive (Network Error):", err.message || err);
+        localStorage.setItem('drive_backup_pending', 'true');
+      } else {
+        console.error("Erreur de sauvegarde automatique sur Google Drive:", err);
+      }
       return false;
     }
   }
@@ -1640,27 +1727,8 @@ class ConvoyageApp {
       const localMissions = await StorageService.loadMissions();
       const localSettings = StorageService.loadSettings();
 
-      // Strip heavy base64 images from completed missions to prevent PayloadTooLargeError
-      const optimizedMissions = localMissions.map(m => {
-        if (m.statut === 'Terminée' || m.statut === 'Annulée') {
-          const stripped = JSON.parse(JSON.stringify(m));
-          if (stripped.inspection) {
-             delete stripped.inspection.dashboardDepartPhoto;
-             delete stripped.inspection.dashboardArriveePhoto;
-             delete stripped.inspection.depositReceiptPhoto;
-             delete stripped.inspection.contractPhoto;
-             delete stripped.inspection.signature;
-             if (stripped.inspection.damages) {
-                stripped.inspection.damages.forEach((d) => {
-                   delete d.photoUrls;
-                });
-             }
-          }
-          delete stripped.cancelContractPhoto;
-          return stripped;
-        }
-        return m;
-      });
+      // Strip heavy base64 images from all missions to prevent PayloadTooLargeError
+      const optimizedMissions = stripImagesFromMissions(localMissions);
 
       const res = await fetch('/api/drive/save-app-data', {
         method: 'POST',
@@ -1674,7 +1742,15 @@ class ConvoyageApp {
         })
       });
 
-      const data = await res.json();
+      const responseText = await res.text();
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (parseErr) {
+        console.error("Server response for backupToDrive was not JSON. Raw response:", responseText);
+        throw new Error("Le serveur a renvoyé une réponse HTML au lieu de JSON.");
+      }
+      
       if (data.success) {
         if (showToast) {
           DashboardService.showNotification("Sauvegarde réussie sur votre Google Drive !", "success");
@@ -1683,9 +1759,19 @@ class ConvoyageApp {
         throw new Error(data.error || "Unknown server error");
       }
     } catch (err) {
-      console.error("Backup to Drive failed:", err);
-      if (showToast) {
-        DashboardService.showNotification("Échec de la sauvegarde sur Google Drive.", "danger");
+      const isNetworkError = !navigator.onLine || (err.message && (err.message.includes("Failed to fetch") || err.message.includes("NetworkError")));
+      if (isNetworkError) {
+        console.warn("Backup to Drive failed due to network error (offline/weak connection):", err.message || err);
+        // Mark backup as pending so offline sync manager retries
+        localStorage.setItem('drive_backup_pending', 'true');
+        if (showToast) {
+          DashboardService.showNotification("Sauvegarde locale effectuée. Elle sera synchronisée avec Google Drive dès la reconnexion.", "warning");
+        }
+      } else {
+        console.error("Backup to Drive failed:", err);
+        if (showToast) {
+          DashboardService.showNotification("Échec de la sauvegarde sur Google Drive: " + (err.message || err), "danger");
+        }
       }
     }
   }
@@ -2546,8 +2632,8 @@ class ConvoyageApp {
     let needsSave = false;
     for (let mission of this.missions) {
       if (mission.inspection && mission.inspection.status === 'Validée') {
-        if (mission.statut !== 'Terminée') {
-          mission.statut = 'Terminée';
+        if (mission.statut !== 'État des lieux') {
+          mission.statut = 'État des lieux';
           needsSave = true;
         }
         if (!mission.driveSaved && this.googleDriveToken) {
@@ -2860,6 +2946,23 @@ class ConvoyageApp {
 
     const totalNetFiltered = totalGainFiltered - totalExpenses;
     const avgRentabilityFiltered = totalDistanceFiltered > 0 ? (totalNetFiltered / totalDistanceFiltered) : 0;
+
+    const tfoot = document.getElementById('accountant_report_tfoot');
+    if (tfoot) {
+      if (totalMissions > 0) {
+        tfoot.innerHTML = `
+          <tr class="bg-slate-50/90 dark:bg-slate-900/65 font-bold border-t border-b border-slate-250 dark:border-slate-800">
+            <td colspan="4" class="py-3 px-4 text-left font-extrabold text-slate-700 dark:text-slate-300 uppercase tracking-wider text-[10px]">Total de la sélection (${totalMissions} mission${totalMissions > 1 ? 's' : ''})</td>
+            <td class="py-3 px-4 text-right whitespace-nowrap font-black text-slate-900 dark:text-white font-mono">${formatEuro(totalGainFiltered)}</td>
+            <td class="py-3 px-4 text-right whitespace-nowrap font-semibold text-rose-500 dark:text-rose-450 font-mono">${formatEuro(totalExpenses)}</td>
+            <td class="py-3 px-4 text-right whitespace-nowrap font-black font-mono ${totalNetFiltered >= 0 ? 'text-emerald-600 dark:text-emerald-450' : 'text-rose-600'}">${formatEuro(totalNetFiltered)}</td>
+            <td class="py-3 px-4"></td>
+          </tr>
+        `;
+      } else {
+        tfoot.innerHTML = '';
+      }
+    }
 
     const elTotalMissions = document.getElementById('stat_accountant_total_missions');
     const elTotalExpenses = document.getElementById('stat_accountant_total_expenses');
@@ -3954,7 +4057,10 @@ class ConvoyageApp {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${this.googleDriveToken}`
-        }
+        },
+        body: JSON.stringify({
+          deletedMissionIds: (this.settings && this.settings.deletedMissionIds) || []
+        })
       });
       const data = await response.json();
 
@@ -4193,23 +4299,37 @@ function initLogoResizer() {
         images.forEach(img => {
           if (container.classList.contains('logo-long-container')) {
             const maxW = 400;
-            if (width < maxW && width > 0) {
+            // Only apply dynamic scaling if width is reasonable (at least 120px) to prevent collapsing when offscreen/hidden
+            if (width < maxW && width >= 120) {
               img.style.width = '100%';
               img.style.height = 'auto';
               img.style.maxWidth = `${width}px`;
-            } else {
+            } else if (width >= maxW) {
               img.style.width = '400px';
               img.style.maxWidth = '100%';
+              img.style.height = '';
+            } else {
+              // Clear inline styles to let native CSS classes do the work
+              img.style.width = '';
+              img.style.height = '';
+              img.style.maxWidth = '';
             }
           } else if (container.classList.contains('logo-short-container')) {
             const maxW = container.dataset.maxWidth ? parseInt(container.dataset.maxWidth, 10) : 150;
-            if (width < maxW && width > 0) {
+            // Only apply dynamic scaling if width is reasonable (at least 24px)
+            if (width < maxW && width >= 24) {
               img.style.width = '100%';
               img.style.height = 'auto';
               img.style.maxWidth = `${width}px`;
-            } else {
+            } else if (width >= maxW) {
               img.style.width = `${maxW}px`;
               img.style.maxWidth = '100%';
+              img.style.height = '';
+            } else {
+              // Clear inline styles to let native CSS classes do the work
+              img.style.width = '';
+              img.style.height = '';
+              img.style.maxWidth = '';
             }
           }
         });

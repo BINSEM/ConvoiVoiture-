@@ -21,7 +21,8 @@ import {
   Plus, 
   Sparkles,
   Info,
-  CameraOff
+  CameraOff,
+  Receipt
 } from 'lucide-react';
 
 interface DocumentItem {
@@ -33,6 +34,7 @@ interface DocumentItem {
   date: string;
   source: 'local' | 'drive';
   url: string;
+  category?: 'facture' | 'reçu' | 'contrat' | 'autre';
 }
 
 // Default High-Fidelity SVG templates encoded inline for offline mock documents
@@ -105,6 +107,27 @@ const DocumentManager: React.FC = () => {
   const [activeFilter, setActiveFilter] = useState<'all' | 'local' | 'drive'>('all');
   const [isLoadingDrive, setIsLoadingDrive] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+
+  // Modal and Category states
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newDocCategory, setNewDocCategory] = useState<'facture' | 'reçu' | 'contrat' | 'autre'>('facture');
+  const [newDocName, setNewDocName] = useState('');
+  const [activeCategoryFilter, setActiveCategoryFilter] = useState<'all' | 'facture' | 'reçu' | 'contrat' | 'autre'>('all');
+
+  const handleCategoryChange = (cat: 'facture' | 'reçu' | 'contrat' | 'autre') => {
+    setNewDocCategory(cat);
+    const dateStr = new Date().toLocaleDateString('fr-FR').replace(/\//g, '-');
+    const rand = Math.floor(Math.random() * 100);
+    if (cat === 'facture') {
+      setNewDocName(`Facture_${dateStr}_${rand}`);
+    } else if (cat === 'reçu') {
+      setNewDocName(`Recu_${dateStr}_${rand}`);
+    } else if (cat === 'contrat') {
+      setNewDocName(`Contrat_${dateStr}_${rand}`);
+    } else {
+      setNewDocName(`Document_${dateStr}_${rand}`);
+    }
+  };
 
   // Lightbox States
   const [activePreviewDoc, setActivePreviewDoc] = useState<DocumentItem | null>(null);
@@ -315,23 +338,29 @@ const DocumentManager: React.FC = () => {
       });
       
       pdf.addImage(imgData, 'JPEG', 0, 0, canvas.width, canvas.height);
-      const outputName = `Document_Scanne_${new Date().getTime()}.pdf`;
+      const outputName = `${newDocName || `Scan_Document_${new Date().getTime()}`}.pdf`;
       pdf.save(outputName);
 
       // Save scanned image to local document list
+      const finalName = newDocName 
+        ? (newDocName.toLowerCase().endsWith('.jpg') || newDocName.toLowerCase().endsWith('.jpeg') ? newDocName : `${newDocName}.jpg`)
+        : `Scan_Document_${new Date().toLocaleDateString('fr-FR').replace(/\//g, '-')}_${Math.floor(Math.random() * 1000)}.jpg`;
+
       const newDoc: DocumentItem = {
         id: `scanned_${Date.now()}`,
-        name: `Scan_Document_${new Date().toLocaleDateString('fr-FR').replace(/\//g, '-')}_${Math.floor(Math.random() * 1000)}.jpg`,
+        name: finalName,
         mimeType: 'image/jpeg',
         size: formatBytes(imgData.length * 0.75),
         bytes: imgData.length * 0.75,
         date: new Date().toLocaleDateString('fr-FR'),
         source: 'local',
-        url: imgData
+        url: imgData,
+        category: showAddModal ? newDocCategory : 'autre'
       };
       const updated = [newDoc, ...localFiles];
       setLocalFiles(updated);
       localStorage.setItem('document_manager_local_files', JSON.stringify(updated));
+      setShowAddModal(false);
     } catch (err) {
       console.error("Erreur lors de la conversion PDF / Stockage:", err);
       setErrorMsg("Erreur lors de la création du PDF.");
@@ -379,19 +408,37 @@ const DocumentManager: React.FC = () => {
     const reader = new FileReader();
     reader.onload = () => {
       const result = reader.result as string;
+      
+      const extension = file.name.substring(file.name.lastIndexOf('.'));
+      const finalName = showAddModal && newDocName
+        ? (newDocName.toLowerCase().endsWith(extension.toLowerCase()) ? newDocName : `${newDocName}${extension}`)
+        : file.name;
+
+      const finalCategory = showAddModal ? newDocCategory : (() => {
+        const nameLower = file.name.toLowerCase();
+        if (nameLower.includes('facture')) return 'facture';
+        if (nameLower.includes('recu') || nameLower.includes('reçu')) return 'reçu';
+        if (nameLower.includes('contrat') || nameLower.includes('assurance')) return 'contrat';
+        return 'autre';
+      })();
+
       const newDoc: DocumentItem = {
         id: `local_${Date.now()}`,
-        name: file.name,
+        name: finalName,
         mimeType: file.type,
         size: formatBytes(file.size),
         bytes: file.size,
         date: new Date().toLocaleDateString('fr-FR'),
         source: 'local',
-        url: result
+        url: result,
+        category: finalCategory
       };
       const updated = [newDoc, ...localFiles];
       setLocalFiles(updated);
       localStorage.setItem('document_manager_local_files', JSON.stringify(updated));
+      if (showAddModal) {
+        setShowAddModal(false);
+      }
     };
     reader.readAsDataURL(file);
   };
@@ -428,13 +475,34 @@ const DocumentManager: React.FC = () => {
 
   // Merge lists according to filtered status
   const displayedDocuments = (() => {
+    let baseList: DocumentItem[] = [];
     if (activeFilter === 'local') {
-      return localFiles;
+      baseList = localFiles;
+    } else if (activeFilter === 'drive') {
+      baseList = driveFiles;
+    } else {
+      baseList = [...localFiles, ...driveFiles];
     }
-    if (activeFilter === 'drive') {
-      return driveFiles;
+
+    if (activeCategoryFilter !== 'all') {
+      return baseList.filter(doc => {
+        let cat = doc.category;
+        if (!cat) {
+          if (doc.id === 'seed_license') cat = 'autre';
+          else if (doc.id === 'seed_technical') cat = 'autre';
+          else if (doc.id === 'seed_insurance') cat = 'contrat';
+          else {
+            const nameLower = doc.name.toLowerCase();
+            if (nameLower.includes('facture')) cat = 'facture';
+            else if (nameLower.includes('recu') || nameLower.includes('reçu')) cat = 'reçu';
+            else if (nameLower.includes('contrat') || nameLower.includes('assurance')) cat = 'contrat';
+            else cat = 'autre';
+          }
+        }
+        return cat === activeCategoryFilter;
+      });
     }
-    return [...localFiles, ...driveFiles];
+    return baseList;
   })();
 
   if (loading) {
@@ -560,6 +628,35 @@ const DocumentManager: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* UPLOAD & ACTION BAR */}
           <div className="md:col-span-1 space-y-6">
+            {/* UNIFIED ADD DOCUMENT CARD */}
+            <div className="bg-gradient-to-br from-indigo-600 to-indigo-800 dark:from-slate-900/90 dark:to-slate-950 border border-indigo-500/10 dark:border-slate-800 rounded-2xl p-5 text-white shadow-md space-y-4">
+              <div className="flex items-start justify-between">
+                <div className="p-2 bg-white/10 dark:bg-slate-800 rounded-xl">
+                  <Plus className="w-5 h-5 text-white dark:text-indigo-400 animate-pulse" />
+                </div>
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-emerald-500 text-white rounded-full font-black text-[9px] uppercase tracking-wider">
+                  Nouveau
+                </span>
+              </div>
+              <div className="space-y-1">
+                <h4 className="font-black text-xs uppercase tracking-wider text-white">Ajouter un Justificatif</h4>
+                <p className="text-[11px] text-indigo-100 dark:text-slate-400 leading-relaxed font-semibold">
+                  Ajoutez une facture, un reçu ou un contrat via la caméra de votre téléphone ou en important un fichier.
+                </p>
+              </div>
+              <button 
+                onClick={() => {
+                  setNewDocCategory('facture');
+                  const dateStr = new Date().toLocaleDateString('fr-FR').replace(/\//g, '-');
+                  setNewDocName(`Facture_${dateStr}_${Math.floor(Math.random() * 100)}`);
+                  setShowAddModal(true);
+                }} 
+                className="w-full py-2.5 bg-white hover:bg-slate-50 dark:bg-indigo-600 dark:hover:bg-indigo-700 text-indigo-700 dark:text-white font-extrabold text-[11px] uppercase tracking-wide rounded-xl shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95"
+              >
+                <Camera className="w-4 h-4 text-indigo-600 dark:text-white" /> Ouvrir le numériseur
+              </button>
+            </div>
+
             {/* FILE DROPZONE */}
             <div 
               onDragOver={handleDragOver}
@@ -668,6 +765,32 @@ const DocumentManager: React.FC = () => {
               )}
             </div>
 
+            {/* Category Filters row */}
+            <div className="flex flex-wrap items-center gap-1.5 py-1">
+              {[
+                { id: 'all', name: 'Tous types' },
+                { id: 'facture', name: 'Factures' },
+                { id: 'reçu', name: 'Reçus' },
+                { id: 'contrat', name: 'Contrats' },
+                { id: 'autre', name: 'Autres' }
+              ].map((cat) => {
+                const isSelected = activeCategoryFilter === cat.id;
+                return (
+                  <button
+                    key={cat.id}
+                    onClick={() => setActiveCategoryFilter(cat.id as any)}
+                    className={`px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider transition-all border ${
+                      isSelected
+                        ? 'bg-indigo-600 border-indigo-600 text-white shadow-sm'
+                        : 'bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:border-slate-350 dark:hover:border-slate-700 hover:text-slate-700 dark:hover:text-slate-300 cursor-pointer'
+                    }`}
+                  >
+                    {cat.name}
+                  </button>
+                );
+              })}
+            </div>
+
             {/* DIRECT LISTING GALLERY GRID */}
             {displayedDocuments.length === 0 ? (
               <div className="bg-slate-50 dark:bg-slate-950/20 border border-slate-150 dark:border-slate-850 p-12 text-center rounded-2xl space-y-3">
@@ -719,6 +842,40 @@ const DocumentManager: React.FC = () => {
                           {doc.source === 'drive' ? <Cloud className="w-2.5 h-2.5" /> : <Server className="w-2.5 h-2.5" />}
                           {doc.source === 'drive' ? 'Drive' : 'Local'}
                         </span>
+
+                        {/* Top right category badge */}
+                        {(() => {
+                          let cat = doc.category;
+                          if (!cat) {
+                            if (doc.id === 'seed_license') cat = 'autre';
+                            else if (doc.id === 'seed_technical') cat = 'autre';
+                            else if (doc.id === 'seed_insurance') cat = 'contrat';
+                            else {
+                              const nameLower = doc.name.toLowerCase();
+                              if (nameLower.includes('facture')) cat = 'facture';
+                              else if (nameLower.includes('recu') || nameLower.includes('reçu')) cat = 'reçu';
+                              else if (nameLower.includes('contrat') || nameLower.includes('assurance')) cat = 'contrat';
+                              else cat = 'autre';
+                            }
+                          }
+                          let catName = 'Autre';
+                          let catColor = 'bg-slate-500/80 text-white';
+                          if (cat === 'facture') {
+                            catName = 'Facture';
+                            catColor = 'bg-amber-600/85 text-white';
+                          } else if (cat === 'reçu') {
+                            catName = 'Reçu';
+                            catColor = 'bg-emerald-600/85 text-white';
+                          } else if (cat === 'contrat') {
+                            catName = 'Contrat';
+                            catColor = 'bg-indigo-600/85 text-white';
+                          }
+                          return (
+                            <span className={`absolute top-2 right-2 inline-flex items-center py-0.5 px-2 rounded-md text-[9px] font-black uppercase tracking-wider backdrop-blur-md shadow-sm ${catColor}`}>
+                              {catName}
+                            </span>
+                          );
+                        })()}
                       </div>
 
                       {/* Metadata info */}
@@ -846,6 +1003,41 @@ const DocumentManager: React.FC = () => {
                   <span className="font-bold text-slate-200 font-mono break-all">{activePreviewDoc.name}</span>
                 </div>
                 <div>
+                  <span className="text-[9px] text-slate-500 font-bold uppercase tracking-wider block mb-1">Catégorie</span>
+                  {(() => {
+                    let cat = activePreviewDoc.category;
+                    if (!cat) {
+                      if (activePreviewDoc.id === 'seed_license') cat = 'autre';
+                      else if (activePreviewDoc.id === 'seed_technical') cat = 'autre';
+                      else if (activePreviewDoc.id === 'seed_insurance') cat = 'contrat';
+                      else {
+                        const nameLower = activePreviewDoc.name.toLowerCase();
+                        if (nameLower.includes('facture')) cat = 'facture';
+                        else if (nameLower.includes('recu') || nameLower.includes('reçu')) cat = 'reçu';
+                        else if (nameLower.includes('contrat') || nameLower.includes('assurance')) cat = 'contrat';
+                        else cat = 'autre';
+                      }
+                    }
+                    let catName = 'Autre';
+                    let catStyle = 'bg-slate-500/10 text-slate-450 border border-slate-500/15';
+                    if (cat === 'facture') {
+                      catName = 'Facture / Justificatif';
+                      catStyle = 'bg-amber-500/10 text-amber-400 border border-amber-500/15';
+                    } else if (cat === 'reçu') {
+                      catName = 'Reçu de paiement';
+                      catStyle = 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/15';
+                    } else if (cat === 'contrat') {
+                      catName = 'Contrat / Assurance';
+                      catStyle = 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/15';
+                    }
+                    return (
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded text-[9px] uppercase font-bold ${catStyle}`}>
+                        {catName}
+                      </span>
+                    );
+                  })()}
+                </div>
+                <div>
                   <span className="text-[9px] text-slate-500 font-bold uppercase tracking-wider block mb-1">Localisation de stockage</span>
                   <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded text-[9px] uppercase font-bold ${
                     activePreviewDoc.source === 'drive' 
@@ -967,6 +1159,114 @@ const DocumentManager: React.FC = () => {
               <div className="w-14"></div> {/* spacer */}
             </div>
           )}
+        </div>
+      )}
+
+      {/* ADHERING TO REQ: ADD SUPPORTING DOCUMENT MODAL DIALOG */}
+      {showAddModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white dark:bg-slate-900 w-full max-w-lg border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl flex flex-col overflow-hidden max-h-[90vh]">
+            {/* Modal Header */}
+            <div className="p-5 border-b border-slate-150 dark:border-slate-800 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 rounded-xl">
+                  <Camera className="w-5 h-5 animate-pulse" />
+                </div>
+                <div>
+                  <h3 className="font-black text-sm text-slate-900 dark:text-white uppercase tracking-wider">Numériser un Justificatif</h3>
+                  <p className="text-[10px] text-slate-450 dark:text-slate-400 font-semibold font-mono">Factures, reçus de transport ou contrats</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setShowAddModal(false)}
+                className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg transition-all cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 space-y-6 overflow-y-auto">
+              {/* Category Selection */}
+              <div className="space-y-2.5">
+                <label className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wide block">1. Type de document</label>
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    { id: 'facture', name: 'Facture', icon: FileText, desc: 'Frais de transport, carburant, repas...', color: 'text-amber-500 bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-900/50' },
+                    { id: 'reçu', name: 'Reçu / Ticket', icon: Receipt, desc: 'Péage, parking, menues dépenses...', color: 'text-emerald-500 bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-900/50' },
+                    { id: 'contrat', name: 'Contrat / Assur.', icon: FileText, desc: 'Contrat de convoi, assurance verte...', color: 'text-indigo-500 bg-indigo-50 dark:bg-indigo-950/40 border-indigo-200 dark:border-indigo-900/50' },
+                    { id: 'autre', name: 'Autre Document', icon: FileText, desc: 'Habilitation, rapport de mission...', color: 'text-slate-500 bg-slate-50 dark:bg-slate-900/40 border-slate-200 dark:border-slate-800' }
+                  ].map((cat) => {
+                    const isSelected = newDocCategory === cat.id;
+                    const IconComponent = cat.icon;
+                    return (
+                      <button
+                        key={cat.id}
+                        type="button"
+                        onClick={() => handleCategoryChange(cat.id as any)}
+                        className={`p-3.5 border rounded-xl flex flex-col items-start text-left gap-2 transition-all cursor-pointer select-none group ${
+                          isSelected 
+                            ? 'border-indigo-600 bg-indigo-50/10 dark:bg-indigo-950/30 ring-2 ring-indigo-500/20' 
+                            : 'border-slate-200 dark:border-slate-800 hover:border-slate-350 dark:hover:border-slate-700 bg-white dark:bg-slate-900'
+                        }`}
+                      >
+                        <div className={`p-2 rounded-lg ${isSelected ? cat.color : 'bg-slate-100 dark:bg-slate-800 text-slate-500 group-hover:text-slate-700 dark:group-hover:text-slate-300'}`}>
+                          <IconComponent className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <span className="text-xs font-black text-slate-850 dark:text-slate-200 block">{cat.name}</span>
+                          <span className="text-[9px] text-slate-450 dark:text-slate-400 font-medium leading-normal block mt-0.5">{cat.desc}</span>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Name input */}
+              <div className="space-y-2">
+                <label htmlFor="new_doc_name_input" className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wide block">2. Nommer le document</label>
+                <input
+                  id="new_doc_name_input"
+                  type="text"
+                  placeholder="Ex: Facture d'essence Total"
+                  value={newDocName}
+                  onChange={(e) => setNewDocName(e.target.value)}
+                  className="w-full px-4 py-2.5 bg-slate-55 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl outline-none text-xs font-bold text-slate-800 dark:text-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors"
+                />
+              </div>
+
+              {/* Source choice */}
+              <div className="space-y-3 pt-2">
+                <label className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wide block">3. Capturer ou Importer</label>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      startCamera();
+                    }}
+                    className="flex-1 py-3 px-4 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-extrabold text-xs uppercase tracking-wide rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <Camera className="w-4 h-4" /> Prendre une photo (Caméra)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={triggerSelectFile}
+                    className="flex-1 py-3 px-4 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 active:scale-95 text-slate-700 dark:text-slate-200 font-extrabold text-xs uppercase tracking-wide rounded-xl border border-slate-200 dark:border-slate-800 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <Upload className="w-4 h-4" /> Importer un fichier
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 bg-slate-50 dark:bg-slate-950 border-t border-slate-150 dark:border-slate-800 text-center">
+              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider font-mono">
+                La photo capturée sera automatiquement compressée en PDF sécurisé.
+              </span>
+            </div>
+          </div>
         </div>
       )}
     </div>

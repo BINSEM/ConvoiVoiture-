@@ -45,20 +45,56 @@ export const InspectionService = {
     if (!listEl) return;
     listEl.innerHTML = "";
 
+    const filterYear = document.getElementById("ins_filter_year")?.value || "all";
+    const filterMonth = document.getElementById("ins_filter_month")?.value || "all";
+    const sortOrder = document.getElementById("ins_sort_order")?.value || "date_desc";
+
     const missions = app.missions || [];
-    if (missions.length === 0) {
+    
+    // Filter by year and month
+    let filteredMissions = [...missions];
+
+    if (filterYear !== "all") {
+      filteredMissions = filteredMissions.filter(m => {
+        if (!m.date) return false;
+        return m.date.startsWith(filterYear);
+      });
+    }
+
+    if (filterMonth !== "all") {
+      filteredMissions = filteredMissions.filter(m => {
+        if (!m.date) return false;
+        const parts = m.date.split("-");
+        return parts[1] === filterMonth;
+      });
+    }
+
+    // Sort chronologically
+    filteredMissions.sort((a, b) => {
+      const dateA = a.date || "";
+      const dateB = b.date || "";
+      if (sortOrder === "date_asc") {
+        return dateA.localeCompare(dateB);
+      } else {
+        return dateB.localeCompare(dateA);
+      }
+    });
+
+    if (filteredMissions.length === 0) {
       listEl.innerHTML = `
         <div class="col-span-full py-8 text-center text-slate-400 dark:text-slate-500 font-medium">
           <i data-lucide="info" class="w-8 h-8 mx-auto mb-2 text-slate-400"></i>
-          Aucune mission disponible pour l'état des lieux.
+          Aucune mission disponible pour l'état des lieux pour la période sélectionnée.
         </div>
       `;
       if (window.lucide) window.lucide.createIcons();
       return;
     }
 
-    missions.forEach((m) => {
-      const isCompleted = (m.inspection && m.inspection.status === "Validée") || m.statut === "Terminée";
+    filteredMissions.forEach((m) => {
+      const isCompleted = (m.inspection && (m.inspection.status === "Validée" || m.inspection.status === "Done" || m.inspection.status === "Fait")) || 
+                          m.statut === "Terminée" || 
+                          (m.statut && (m.statut.toLowerCase() === "état des lieux - fait" || m.statut.toLowerCase() === "etat des lieux - fait" || m.statut.toLowerCase() === "done" || m.statut.toLowerCase() === "fait" || m.statut.toLowerCase().includes("done") || m.statut.toLowerCase().includes("fait")));
       const card = document.createElement("div");
       card.className =
         "bg-slate-50 dark:bg-slate-900 border border-slate-150 dark:border-slate-850 p-4 rounded-xl flex flex-col justify-between gap-3 hover:shadow-md transition-all";
@@ -80,7 +116,7 @@ export const InspectionService = {
           </div>
         </div>
         <button onclick="InspectionService.openInspection('${m.id}')" class="w-full text-center py-2 bg-indigo-600 hover:bg-indigo-505 text-white rounded-lg text-[10.5px] font-extrabold cursor-pointer transition-colors mt-1 uppercase tracking-wider">
-          ${isCompleted ? "Voir le rapport" : "Lancer l'inspection"}
+          ${isCompleted ? "Voir l'inspection" : "Lancer l'inspection"}
         </button>
       `;
       listEl.appendChild(card);
@@ -128,7 +164,9 @@ export const InspectionService = {
 
     if (
       mission &&
-      (mission.statut === "Terminée" || (mission.inspection && mission.inspection.status === "Validée"))
+      (mission.statut === "Terminée" || 
+       (mission.inspection && (mission.inspection.status === "Validée" || mission.inspection.status === "Done" || mission.inspection.status === "Fait")) || 
+       (mission.statut && (mission.statut.toLowerCase() === "état des lieux - fait" || mission.statut.toLowerCase() === "etat des lieux - fait" || mission.statut.toLowerCase() === "done" || mission.statut.toLowerCase() === "fait" || mission.statut.toLowerCase().includes("done") || mission.statut.toLowerCase().includes("fait"))))
     ) {
       this.showSuccessModal(mission);
       return;
@@ -606,10 +644,12 @@ export const InspectionService = {
       }
     }
     
-    // Save to server/drive
+    // Save to server/drive (both JSON data file and text report folder structure)
     if (typeof window.app?.uploadMissionToDrive === "function") {
       await window.app.uploadMissionToDrive(mission, window.app.googleDriveToken);
     }
+    // Finalize the État des lieux and save report + contract to Google Drive folder
+    await this.uploadMissionToDrive(mission);
     
     // Log the cancellation
     try {
@@ -2681,7 +2721,7 @@ export const InspectionService = {
     }
     mission._isUploadingToDrive = true;
 
-    const driveToken = window.googleDriveAccessToken;
+    const driveToken = window.googleDriveAccessToken || (window.app && window.app.googleDriveToken) || '';
     if (!driveToken) {
       delete mission._isUploadingToDrive;
       if (window.DashboardService) {
@@ -2825,14 +2865,15 @@ export const InspectionService = {
       if (mDate.includes("T")) mDate = mDate.split("T")[0];
 
       const reportBlob = new Blob([reportContent], { type: "text/plain" });
-      const reportFile = new File([reportBlob], "notes.txt", {
+      const reportFilename = `Rapport_Etat_des_Lieux_${mDate}.txt`;
+      const reportFile = new File([reportBlob], reportFilename, {
         type: "text/plain",
       });
 
       const reportFormData = new FormData();
       reportFormData.append("file", reportFile);
       reportFormData.append("immatriculation", mission.immatriculation);
-      reportFormData.append("name", "notes.txt");
+      reportFormData.append("name", reportFilename);
       reportFormData.append("date", mDate);
 
       const reportRes = await fetch("/api/drive/upload", {
@@ -2878,7 +2919,7 @@ export const InspectionService = {
             const stageLabel =
               d.stage === "departure" ? "DefautDep" : "DefautArr";
             const extension = blob.type.split("/")[1] || "jpg";
-            const filename = `${stageLabel}_${(d.zone || "Zone").replace(/\s+/g, "_")}_${(d.type || "Type").replace(/\s+/g, "_")}_${i + 1}.${extension}`;
+            const filename = `${stageLabel}_${mDate}_${(d.zone || "Zone").replace(/\s+/g, "_")}_${(d.type || "Type").replace(/\s+/g, "_")}_${i + 1}.${extension}`;
 
             const file = new File([blob], filename, { type: blob.type });
             const formData = new FormData();
@@ -2899,7 +2940,13 @@ export const InspectionService = {
               uploadedCount++;
             }
           } catch (err) {
-            console.error("Erreur d'upload de photo d'inspection:", err);
+            const isNetworkError = !navigator.onLine || (err.message && (err.message.includes("Failed to fetch") || err.message.includes("NetworkError")));
+            if (isNetworkError) {
+              console.warn("Erreur d'upload de photo d'inspection (Network Error):", err.message || err);
+              localStorage.setItem('drive_backup_pending', 'true');
+            } else {
+              console.error("Erreur d'upload de photo d'inspection:", err);
+            }
           }
         }
       }
@@ -2939,7 +2986,7 @@ export const InspectionService = {
             }
 
             const extension = blob.type.split("/")[1] || "jpg";
-            const filename = `${tdb.prefix}_${mission.immatriculation}.${extension}`;
+            const filename = `${tdb.prefix}_${mission.immatriculation}_${mDate}.${extension}`;
 
             const file = new File([blob], filename, { type: blob.type });
             const formData = new FormData();
@@ -2956,7 +3003,13 @@ export const InspectionService = {
               body: formData,
             });
           } catch (err) {
-            console.error("Erreur d'upload photo TDB aux Drive:", err);
+            const isNetworkError = !navigator.onLine || (err.message && (err.message.includes("Failed to fetch") || err.message.includes("NetworkError")));
+            if (isNetworkError) {
+              console.warn("Erreur d'upload photo TDB aux Drive (Network Error):", err.message || err);
+              localStorage.setItem('drive_backup_pending', 'true');
+            } else {
+              console.error("Erreur d'upload photo TDB aux Drive:", err);
+            }
           }
         }
       }
@@ -2980,7 +3033,7 @@ export const InspectionService = {
           }
 
           if (blob) {
-            const filename = `Signature_Conducteur_${mission.immatriculation}.png`;
+            const filename = `Signature_Conducteur_${mission.immatriculation}_${mDate}.png`;
             const file = new File([blob], filename, { type: blob.type });
             const formData = new FormData();
             formData.append("file", file);
@@ -2997,7 +3050,13 @@ export const InspectionService = {
             });
           }
         } catch (err) {
-          console.error("Erreur d'upload de la signature à Google Drive:", err);
+          const isNetworkError = !navigator.onLine || (err.message && (err.message.includes("Failed to fetch") || err.message.includes("NetworkError")));
+          if (isNetworkError) {
+            console.warn("Erreur d'upload de la signature à Google Drive (Network Error):", err.message || err);
+            localStorage.setItem('drive_backup_pending', 'true');
+          } else {
+            console.error("Erreur d'upload de la signature à Google Drive:", err);
+          }
         }
       }
 
@@ -3006,7 +3065,7 @@ export const InspectionService = {
       if (missionIndex !== -1) {
         app.missions[missionIndex].driveSaved = true;
         if (app.missions[missionIndex].statut !== "Annulée") {
-          app.missions[missionIndex].statut = "Terminée";
+          app.missions[missionIndex].statut = "État des lieux";
         }
         app.saveMissions();
         if (window.app && window.app.refreshUI) {
@@ -3026,13 +3085,25 @@ export const InspectionService = {
       return true;
     } catch (err) {
       delete mission._isUploadingToDrive;
-      console.error("Erreur d'enregistrement Google Drive:", err);
-      if (window.DashboardService) {
-        window.DashboardService.showNotification(
-          "Échec de la sauvegarde Google Drive: " +
-            (err.message || "Erreur inconnue"),
-          "error",
-        );
+      const isNetworkError = !navigator.onLine || (err.message && (err.message.includes("Failed to fetch") || err.message.includes("NetworkError")));
+      if (isNetworkError) {
+        console.warn("Erreur d'enregistrement Google Drive (Network Error):", err.message || err);
+        localStorage.setItem('drive_backup_pending', 'true');
+        if (window.DashboardService) {
+          window.DashboardService.showNotification(
+            "Sauvegarde locale effectuée. Elle sera synchronisée avec Google Drive dès le retour de votre connexion.",
+            "warning",
+          );
+        }
+      } else {
+        console.error("Erreur d'enregistrement Google Drive:", err);
+        if (window.DashboardService) {
+          window.DashboardService.showNotification(
+            "Échec de la sauvegarde Google Drive: " +
+              (err.message || "Erreur inconnue"),
+            "error",
+          );
+        }
       }
       if (driveBtn) {
         driveBtn.disabled = false;
@@ -3089,14 +3160,14 @@ export const InspectionService = {
         heureArrivee: this.arriveeTime,
       };
 
-      // Auto-assign master status to 'Terminée' since the final arrival check is complete
-      mission.statut = "Terminée";
+      // Auto-assign master status to 'État des lieux' since the final arrival check is complete
+      mission.statut = "État des lieux";
 
       app.saveMissions();
       app.refreshUI();
 
       // Check if Google Drive accessToken is available for automatic backup
-      const driveToken = window.googleDriveAccessToken;
+      const driveToken = window.googleDriveAccessToken || (window.app && window.app.googleDriveToken) || '';
       if (driveToken && mission.immatriculation) {
         this.uploadMissionToDrive(mission);
       }
